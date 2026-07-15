@@ -1,0 +1,33 @@
+{
+  "name": "期现分析",
+  "appid": "__UNI__FUTURE_ANALYSIS",
+  "description": "多品种期现分析与采购建议",
+  "versionName": "0.1.0",
+  "versionCode": "100",
+  "transformPx": false,
+  "app-plus": {
+    "usingComponents": true
+  },
+  "h5": {
+    "title": "期现分析",
+    "router": {
+      "mode": "hash"
+    },
+    "devServer": {
+      "port": 5174,
+      "proxy": {
+        "/api": {
+          "target": "http://127.0.0.1:8000",
+          "changeOrigin": true
+        }
+      }
+    }
+  },
+  "mp-weixin": {
+    "appid": "",
+    "setting": {
+      "urlCheck": false
+    },
+    "usingComponents": true
+  }
+}

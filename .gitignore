@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+*.db
+
+# Node
+node_modules/
+
+# Build output
+customer-miniapp/dist/
+# Keep backend/static/ for Zeabur deployment
+!backend/static/
+
+# Environment
+.env
+.env.local
+
+# Temp
+__temp_*.cmd
+__temp_*.ps1
+
+# Logs
+logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo

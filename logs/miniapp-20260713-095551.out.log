@@ -1,0 +1,23 @@
+请注意运行模式下，因日志输出、sourcemap 以及未压缩源码等原因，性能和包体积，均不及发行模式。
+vite是按需编译，运行时点击某个未编译页面会先编译后加载，导致显示较慢，发行后无此问题。
+编译器版本：5.21（vue3）
+正在编译中...
+
+​已开启 uni统计 2.0​
+
+[36m
+  vite v5.4.21[39m[32m dev server running at:
+[39m
+  [32m➜[39m  [1mLocal[22m:   [36mhttp://localhost:[1m5174[22m/[39m
+[2m  [32m➜[39m  [1mNetwork[22m[2m: use [22m[1m--host[22m[2m to expose[22m
+
+  [36mready in 2860ms.[39m
+
+[2m10:23:55[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m10:36:34[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m10:44:31[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m10:44:43[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m11:11:11[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m11:11:23[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m11:38:05[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m
+[2m11:46:15[22m [36m[1m[vite][22m[39m [32mpage reload [39m[2mindex.html[22m

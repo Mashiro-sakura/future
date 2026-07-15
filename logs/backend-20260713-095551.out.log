@@ -1,0 +1,13 @@
+INFO:     127.0.0.1:55591 - "GET /api/public/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55592 - "GET /api/public/reports/latest HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52495 - "GET /api/public/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:52495 - "GET /api/public/products/PTA/trend?days=60 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55190 - "GET /api/public/products/CU/trend?days=60 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56194 - "GET /api/public/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56194 - "GET /api/public/products/PTA/trend?days=60 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56194 - "GET /api/public/products/PVC/trend?days=60 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:56194 - "GET /api/public/products/CU/trend?days=60 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51725 - "GET /api/public/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55853 - "GET /api/public/products/PTA/trend?days=60 HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51725 - "GET /api/public/overview HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51725 - "GET /api/public/products/PTA/trend?days=60 HTTP/1.1" 200 OK

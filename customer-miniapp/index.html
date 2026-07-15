@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>期现分析客户面预览</title>
+    <style>
+      :root {
+        color: #182033;
+        background: #f6f7fb;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: #f6f7fb;
+      }
+
+      .app {
+        width: min(100%, 430px);
+        min-height: 100vh;
+        margin: 0 auto;
+        background: #f6f7fb;
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 132px;
+        padding: 24px 20px;
+        background: #0f172a;
+        color: #fff;
+      }
+
+      .eyebrow {
+        margin: 0 0 6px;
+        color: #93c5fd;
+        font-size: 13px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        letter-spacing: 0;
+      }
+
+      .refresh {
+        width: 68px;
+        height: 36px;
+        border: 0;
+        border-radius: 8px;
+        background: #f97316;
+        color: #fff;
+        font-weight: 700;
+      }
+
+      main {
+        display: grid;
+        gap: 14px;
+        padding: 14px;
+      }
+
+      .panel {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: #fff;
+      }
+
+      .report {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        padding: 16px;
+      }
+
+      .report h2 {
+        margin: 0;
+        overflow: hidden;
+        color: #111827;
+        font-size: 17px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .report p {
+        margin: 6px 0 0;
+        color: #64748b;
+        font-size: 13px;
+      }
+
+      .link {
+        flex: 0 0 auto;
+        color: #2563eb;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .product-list {
+        display: grid;
+        gap: 12px;
+      }
+
+      .product {
+        padding: 16px;
+      }
+
+      .product.active {
+        border-color: #2563eb;
+        box-shadow: 0 0 0 1px #2563eb inset;
+      }
+
+      .product-head,
+      .price-row,
+      .advice-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .code {
+        margin: 0;
+        color: #111827;
+        font-size: 24px;
+        font-weight: 800;
+      }
+
+      .name {
+        margin: 2px 0 0;
+        color: #64748b;
+        font-size: 12px;
+      }
+
+      .main-contract {
+        color: #2563eb;
+        font-weight: 700;
+      }
+
+      .advice {
+        min-width: 76px;
+        padding: 6px 8px;
+        border-radius: 7px;
+        background: #ecfdf5;
+        color: #047857;
+        font-size: 13px;
+        font-weight: 700;
+        text-align: center;
+      }
+
+      .price-row {
+        margin-top: 16px;
+      }
+
+      .label {
+        display: block;
+        color: #64748b;
+        font-size: 12px;
+      }
+
+      .value {
+        display: block;
+        margin-top: 5px;
+        color: #111827;
+        font-size: 21px;
+        font-weight: 800;
+      }
+
+      .change {
+        display: block;
+        margin-top: 2px;
+        color: #64748b;
+        font-size: 12px;
+      }
+
+      .positive {
+        color: #c2410c;
+      }
+
+      .negative {
+        color: #0f766e;
+      }
+
+      .basis-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 14px;
+      }
+
+      .basis-row span {
+        padding: 5px 8px;
+        border-radius: 7px;
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 12px;
+      }
+
+      .chart-panel,
+      .summary,
+      .analysis,
+      .recommendations {
+        padding: 16px;
+      }
+
+      .section-title {
+        margin: 0 0 12px;
+        color: #111827;
+        font-size: 17px;
+      }
+
+      canvas {
+        width: 100%;
+        height: 210px;
+      }
+
+      .summary-text {
+        margin: 0;
+        color: #334155;
+        font-size: 14px;
+        line-height: 1.7;
+        white-space: pre-wrap;
+      }
+
+      .analysis-grid {
+        display: grid;
+        gap: 12px;
+      }
+
+      .analysis-item {
+        padding: 12px;
+        border-radius: 8px;
+        background: #f8fafc;
+      }
+
+      .analysis-item h3 {
+        margin: 0 0 8px;
+        color: #1d4ed8;
+        font-size: 15px;
+      }
+
+      .conclusion-text {
+        color: #dc2626;
+        font-size: 15px;
+        font-weight: 900;
+      }
+
+      .recommendation {
+        padding: 14px 0;
+        border-top: 1px solid #e5e7eb;
+      }
+
+      .recommendation:first-of-type {
+        border-top: 0;
+        padding-top: 0;
+      }
+
+      .recommendation h3 {
+        margin: 0;
+        color: #111827;
+        font-size: 18px;
+      }
+
+      .recommendation .action {
+        padding: 5px 8px;
+        border-radius: 7px;
+        background: #eff6ff;
+        color: #1d4ed8;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .recommendation p {
+        margin: 10px 0 0;
+        color: #334155;
+        font-size: 14px;
+        line-height: 1.55;
+      }
+
+      .risk {
+        color: #b45309 !important;
+      }
+
+      .bar {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 10px;
+        color: #64748b;
+        font-size: 12px;
+      }
+
+      .track {
+        flex: 1;
+        height: 7px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e5e7eb;
+      }
+
+      .fill {
+        height: 100%;
+        border-radius: 999px;
+        background: #f97316;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <header class="top">
+        <div>
+          <p class="eyebrow" id="sessionText">日报</p>
+          <h1>期现采购建议</h1>
+        </div>
+        <button class="refresh" id="refreshBtn">刷新</button>
+      </header>
+      <main>
+        <section class="report panel" id="reportCard"></section>
+        <section class="product-list" id="productList"></section>
+        <section class="chart-panel panel">
+          <h2 class="section-title" id="chartTitle">PTA 期现价格</h2>
+          <canvas id="trendChart" width="760" height="420"></canvas>
+        </section>
+        <section class="analysis panel">
+          <h2 class="section-title">四维分析</h2>
+          <div class="analysis-grid" id="analysisGrid"></div>
+        </section>
+        <section class="recommendations panel">
+          <h2 class="section-title">采购建议</h2>
+          <div id="recommendations"></div>
+        </section>
+        <section class="summary panel">
+          <h2 class="section-title">行情摘要</h2>
+          <p class="summary-text" id="summaryText"></p>
+        </section>
+      </main>
+    </div>
+
+    <script type="module">
+      const API_BASE = window.location.origin
+      const fallback = {
+        latest_report: {
+          id: 1,
+          report_date: '2026-07-09',
+          session_name: 'evening',
+          title: '2026-07-09 PTA/PVC/塑料期现晚报',
+          market_summary:
+            'PTA：主力合约TA2609，期货5862，现货5910，基差48，建议小单补库。\nPVC：主力合约V2609，期货5620，现货5580，基差-40，建议逢低采购。\nLLDPE：主力合约L2609，期货8190，现货8250，基差60，建议观望等待。\nPP：主力合约PP2609，期货7442，现货7380，基差-62，建议积极采购。\nOCT：现货8200，暂不做期货盘面分析，建议观望等待。',
+          price_behavior_analysis:
+            'PTA主力合约TA2609：期货+0.74%，现货+0.35%，持仓+1.42%，盘面资金偏强。\nPVC主力合约V2609：现货弱于盘面，短线仍需观察承接。',
+          fundamentals_analysis:
+            'PTA聚酯刚需仍在，适合小单补库；PVC地产链需求恢复偏慢；LLDPE维持安全库存；PP低价资源可分批锁定。',
+          macro_analysis: '原油、煤化工成本和人民币汇率仍是塑化链条主要外部变量，当前宏观信号未形成单边共振。',
+          policy_analysis:
+            '关注能耗、安全生产、环保检查、地产链支持政策，以及交易所保证金和限仓调整。',
+          recommendations: [
+            ['PTA', '小单补库', 'PTA盘面偏强，现货跟涨温和，刚需采购可保持小单节奏。', '关注原油和聚酯开工波动，避免高位集中补库。', 76],
+            ['PVC', '逢低采购', 'PVC现货较期货小幅贴水，价格处于近期偏低区间。', '地产需求恢复仍需观察，库存不宜一次性抬高。', 70],
+            ['LLDPE', '观望等待', 'LLDPE期现价差不大，短线缺少明确采购窗口。', '若原油或进口到港扰动增强，需调整补库节奏。', 66],
+            ['PP', '积极采购', 'PP现货贴水扩大，低价资源适合分批锁定。', '需求端订单不足时，建议保留部分现金仓位。', 82],
+            ['OCT', '观望等待', '辛醇暂按现货品种跟踪，等待区域报价、库存和开工率给出更明确采购窗口。', '关注丁辛醇装置开工、增塑剂需求和现货报价样本偏差。', 66]
+          ].map(([product_code, action, basis, risk_note, confidence], index) => ({
+            id: index + 1,
+            product_code,
+            action,
+            basis,
+            risk_note,
+            confidence
+          }))
+        },
+        products: [
+          ['PTA', 'PTA', 5862, 5910, 48, 0.74, 0.35, 1.42, '小单补库', 76],
+          ['PVC', 'PVC', 5620, 5580, -40, -0.52, -0.83, 0.66, '逢低采购', 70],
+          ['LLDPE', '线型低密度聚乙烯', 8190, 8250, 60, 0.18, 0.12, -0.41, '观望等待', 66],
+          ['PP', '聚丙烯', 7442, 7380, -62, -0.34, -1.08, 2.2, '积极采购', 82],
+          ['OCT', '辛醇', null, 8200, null, null, 0.12, null, '观望等待', 66]
+        ].map(
+          ([
+            code,
+            name,
+            futures_close,
+            spot_price,
+            basis_value,
+            futures_change_pct,
+            spot_change_pct,
+            open_interest_change_pct,
+            recommendation,
+            confidence
+          ]) => ({
+            code,
+            name,
+            futures_contract: { PTA: 'TA2609', PVC: 'V2609', LLDPE: 'L2609', PP: 'PP2609', OCT: null }[code],
+            futures_close,
+            spot_price,
+            basis_value,
+            futures_change_pct,
+            spot_change_pct,
+            open_interest_change_pct,
+            recommendation,
+            confidence
+          })
+        )
+      }
+
+      let selectedCode = 'PTA'
+
+      function money(value) {
+        return value === null || value === undefined ? '-' : Number(value).toLocaleString()
+      }
+
+      function pct(value) {
+        if (value === null || value === undefined) return '-'
+        return `${Number(value) > 0 ? '+' : ''}${Number(value).toFixed(2)}%`
+      }
+
+      function signed(value) {
+        if (value === null || value === undefined) return '-'
+        return Number(value) > 0 ? `+${value}` : String(value)
+      }
+
+      function tone(value) {
+        if (Number(value) > 0) return 'positive'
+        if (Number(value) < 0) return 'negative'
+        return ''
+      }
+
+      function mockTrend(code) {
+        const product = fallback.products.find((item) => item.code === code) || fallback.products[0]
+        const hasFutures = product.futures_close !== null && product.futures_close !== undefined
+        return Array.from({ length: 30 }, (_, index) => {
+          const baseFuture = hasFutures ? product.futures_close : product.spot_price || 7000
+          const baseSpot = product.spot_price
+          const wave = Math.sin(index / 4) * baseFuture * 0.01
+          const drift = (index - 15) * baseFuture * 0.00035
+          return {
+            trade_date: `2026-06-${String(10 + index).padStart(2, '0')}`,
+            futures_contract: product.futures_contract,
+            futures_close: hasFutures ? Math.round(baseFuture + wave + drift) : null,
+            spot_price: Math.round(baseSpot + Math.cos(index / 5) * baseSpot * 0.008 + drift * 0.6)
+          }
+        })
+      }
+
+      async function getJson(path, fallbackValue) {
+        try {
+          const response = await fetch(`${API_BASE}${path}`)
+          if (!response.ok) throw new Error(String(response.status))
+          return await response.json()
+        } catch (error) {
+          return fallbackValue
+        }
+      }
+
+      function getProductAnalysis(report = {}, code, products = []) {
+        const analyses = Array.isArray(report.product_analyses) ? report.product_analyses : []
+        const matched = analyses.find((item) => item.product_code === code)
+        if (matched) return matched
+
+        const product = products.find((item) => item.code === code) || {}
+        const advice = (report.recommendations || []).find((item) => item.product_code === code) || {}
+        const spotOnly = !product.futures_contract
+        return {
+          product_code: code,
+          price_behavior: spotOnly
+            ? `${code}（${product.name || '现货品种'}）为现货品种，暂不做期货盘面分析。价格行为以华东现货${money(product.spot_price)}、华东/华南/西南区域报价、库存、开工率和产业链成本传导为主。`
+            : `${code}主力合约${product.futures_contract || '-'}，期货${money(product.futures_close)}，现货${money(product.spot_price)}，基差${signed(product.basis_value)}，持仓变化${pct(product.open_interest_change_pct)}。K线/形态：离线样本暂按震荡结构处理，需继续观察头肩顶/底、W底、M顶是否确认。均线/多周期：重点跟踪MA5、MA20、MA60是否同向共振。持仓量：结合价格涨跌判断增仓推动或减仓修复。Al Brooks语境：等待连续趋势K线或二次进入确认。YTC语境：先看高周期方向，再看支撑压力位的突破失败或回踩确认。`,
+          fundamentals: advice.basis || `${code}区域现货：华东${money(product.spot_price)}，华南${product.spot_price ? money(Number(product.spot_price) + 30) : '-'}，西南${product.spot_price ? money(Number(product.spot_price) - 20) : '-'}。开工率离线样本暂按75%附近处理。社会库存与工厂库存离线样本暂按平稳处理；库存周期：当前偏主动去库存/观望阶段，需继续跟踪社会库存是否累积、工厂库存是否转移到贸易环节。供需判断：暂未出现明显供需失衡，采购以订单覆盖和安全库存为主。`,
+          macro: `${code}宏观面重点跟踪美元兑人民币、中国经济、美国经济、原油和产业链传导。`,
+          policy:
+            advice.risk_note ||
+            `${code}每日政策/产业消息：安全生产：关注生产、仓储和运输环节。环保：关注排放、能耗和地方环保检查。检修：跟踪相关装置计划检修、临停和重启进度。若出现影响供需平衡的重大事件，政策栏和企业微信会置顶推送。`,
+          conclusion: `结论：离线样本按四维分析综合判断，建议${advice.action || product.recommendation || '观望等待'}。`
+        }
+      }
+
+      function renderAnalysis(report, code, products) {
+        const analysis = getProductAnalysis(report, code, products)
+        const title = document.querySelector('#analysisTitle') || document.querySelector('.analysis .section-title')
+        title.textContent = `${analysis.product_code || code} 四维分析`
+        const sections = [
+          ['价格行为', analysis.price_behavior, false],
+          ['基本面', analysis.fundamentals, false],
+          ['宏观面', analysis.macro, false],
+          ['政策面', analysis.policy, false],
+          ['结论', analysis.conclusion, true]
+        ]
+        document.querySelector('#analysisGrid').innerHTML = sections
+          .map(
+            ([title, content, conclusion]) => `
+              <article class="analysis-item">
+                <h3>${title}</h3>
+                <p class="summary-text ${conclusion ? 'conclusion-text' : ''}">${content || '-'}</p>
+              </article>
+            `
+          )
+          .join('')
+      }
+
+      function renderOverview(data) {
+        document.querySelector('#sessionText').textContent =
+          data.latest_report?.session_name === 'morning' ? '早报' : '晚报'
+        document.querySelector('#reportCard').innerHTML = `
+          <div>
+            <h2>${data.latest_report?.title || '暂无日报'}</h2>
+            <p>${data.latest_report?.report_date || ''}</p>
+          </div>
+          <span class="link">已发布</span>
+        `
+        document.querySelector('#productList').innerHTML = data.products
+          .map(
+            (item) => `
+              <article class="product panel ${selectedCode === item.code ? 'active' : ''}" data-code="${item.code}" data-name="${item.name}">
+                <div class="product-head">
+                  <div>
+                    <p class="code">${item.code}</p>
+                    <p class="name">${item.name}</p>
+                    <p class="name main-contract">${item.futures_contract ? `主力合约 ${item.futures_contract}` : '现货品种'}</p>
+                  </div>
+                  <span class="advice">${item.recommendation || '待更新'}</span>
+                </div>
+                <div class="price-row">
+                  <div>
+                    <span class="label">${item.futures_contract ? '期货' : '期货不适用'}</span>
+                    <span class="value">${money(item.futures_close)}</span>
+                    <span class="change ${tone(item.futures_change_pct)}">${pct(item.futures_change_pct)}</span>
+                  </div>
+                  <div>
+                    <span class="label">现货</span>
+                    <span class="value">${money(item.spot_price)}</span>
+                    <span class="change ${tone(item.spot_change_pct)}">${pct(item.spot_change_pct)}</span>
+                  </div>
+                </div>
+                <div class="basis-row">
+                  <span>${item.futures_contract ? `基差 ${signed(item.basis_value)}` : '无期货基差'}</span>
+                  <span>${item.futures_contract ? `持仓 ${pct(item.open_interest_change_pct)}` : '现货跟踪'}</span>
+                  <span>置信度 ${item.confidence || '-'}%</span>
+                </div>
+              </article>
+            `
+          )
+          .join('')
+        document.querySelector('#recommendations').innerHTML = (data.latest_report?.recommendations || [])
+          .map(
+            (item) => `
+              <article class="recommendation">
+                <div class="advice-head">
+                  <h3>${item.product_code}</h3>
+                  <span class="action">${item.action}</span>
+                </div>
+                <p>${item.basis}</p>
+                <p class="risk">${item.risk_note}</p>
+                <div class="bar">
+                  <div class="track"><div class="fill" style="width:${item.confidence}%"></div></div>
+                  <span>${item.confidence}%</span>
+                </div>
+              </article>
+            `
+          )
+          .join('')
+        renderAnalysis(data.latest_report || {}, selectedCode, data.products || [])
+        /*
+        const report = data.latest_report || {}
+        const sections = [
+          ['价格行为', report.price_behavior_analysis],
+          ['基本面', report.fundamentals_analysis],
+          ['宏观面', report.macro_analysis],
+          ['政策面', report.policy_analysis]
+        ]
+        document.querySelector('#analysisGrid').innerHTML = sections
+          .map(
+            ([title, content]) => `
+              <article class="analysis-item">
+                <h3>${title}</h3>
+                <p class="summary-text">${content || '-'}</p>
+              </article>
+            `
+          )
+          .join('')
+        document.querySelector('#summaryText').textContent = data.latest_report?.market_summary || '暂无摘要'
+        */
+        document.querySelector('#summaryText').textContent = data.latest_report?.market_summary || '-'
+        document.querySelectorAll('.product').forEach((card) => {
+          card.addEventListener('click', () => {
+            selectedCode = card.dataset.code
+            document
+              .querySelectorAll('.product')
+              .forEach((item) => item.classList.toggle('active', item.dataset.code === selectedCode))
+            renderAnalysis(data.latest_report || {}, selectedCode, data.products || [])
+            loadTrend(selectedCode, card.dataset.name)
+          })
+        })
+      }
+
+      function drawTrend(points) {
+        const canvas = document.querySelector('#trendChart')
+        const ctx = canvas.getContext('2d')
+        const width = canvas.width
+        const height = canvas.height
+        const area = { x: 56, y: 34, w: width - 86, h: height - 78 }
+        ctx.clearRect(0, 0, width, height)
+        ctx.fillStyle = '#fff'
+        ctx.fillRect(0, 0, width, height)
+        ctx.strokeStyle = '#e5e7eb'
+        ctx.lineWidth = 2
+        for (let i = 0; i <= 4; i += 1) {
+          const y = area.y + (area.h / 4) * i
+          ctx.beginPath()
+          ctx.moveTo(area.x, y)
+          ctx.lineTo(area.x + area.w, y)
+          ctx.stroke()
+        }
+        drawLine(points, 'futures_close', '#2563eb', area, ctx)
+        drawLine(points, 'spot_price', '#f97316', area, ctx)
+        ctx.fillStyle = '#64748b'
+        ctx.font = '22px sans-serif'
+        ctx.fillText(points[0]?.trade_date?.slice(5) || '', area.x, height - 20)
+        ctx.fillText(points.at(-1)?.trade_date?.slice(5) || '', width - 104, height - 20)
+      }
+
+      function drawLine(points, key, color, area, ctx) {
+        const values = points.map((item) => Number(item[key])).filter(Number.isFinite)
+        if (values.length < 2) return
+        const min = Math.min(...values)
+        const max = Math.max(...values)
+        ctx.strokeStyle = color
+        ctx.lineWidth = 5
+        ctx.beginPath()
+        points.forEach((item, index) => {
+          const x = area.x + (index / Math.max(points.length - 1, 1)) * area.w
+          const y = area.y + area.h - ((Number(item[key]) - min) / Math.max(max - min, 1)) * area.h
+          if (index === 0) ctx.moveTo(x, y)
+          else ctx.lineTo(x, y)
+        })
+        ctx.stroke()
+      }
+
+      async function loadTrend(code, name) {
+        document.querySelector('#chartTitle').textContent = code === 'OCT' ? `${code} 现货价格趋势` : `${code} 主力合约期现价格`
+        const trend = await getJson(`/api/public/products/${code}/trend?days=60`, mockTrend(code))
+        drawTrend(trend.slice(-30))
+      }
+
+      async function load() {
+        const data = await getJson('/api/public/overview', fallback)
+        if (!data.products?.some((item) => item.code === selectedCode)) {
+          selectedCode = data.products?.[0]?.code || 'PTA'
+        }
+        renderOverview(data)
+        await loadTrend(selectedCode)
+      }
+
+      document.querySelector('#refreshBtn').addEventListener('click', load)
+      load()
+    </script>
+  </body>
+</html>

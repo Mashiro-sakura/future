@@ -1,0 +1,122 @@
+from __future__ import annotations
+
+from datetime import datetime
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import desc
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.config import get_settings
+from app.models import Product, Report, WechatMiniappSubscriber
+from app.schemas import (
+    MiniappSubscribeConfigOut,
+    MiniappSubscriptionIn,
+    MiniappSubscriptionOut,
+    OverviewOut,
+    ProductOut,
+    ReportOut,
+    TrendPoint,
+)
+from app.services.analytics import overview_products, trend_points
+from app.services.reports import ensure_report_analysis, latest_public_report
+from app.services.wechat_miniapp import WechatMiniappApiError, exchange_code_for_openid, is_wechat_miniapp_subscription_configured
+
+router = APIRouter(prefix="/api/public", tags=["public"])
+
+
+@router.get("/wechat/subscribe-config", response_model=MiniappSubscribeConfigOut)
+def miniapp_subscribe_config() -> MiniappSubscribeConfigOut:
+    settings = get_settings()
+    enabled = is_wechat_miniapp_subscription_configured()
+    message = "订阅消息可用" if enabled else "后台尚未配置微信小程序订阅消息凭据"
+    return MiniappSubscribeConfigOut(
+        enabled=enabled,
+        template_id=settings.wechat_subscribe_template_id if enabled else None,
+        message=message,
+    )
+
+
+@router.post("/wechat/subscriptions", response_model=MiniappSubscriptionOut)
+def create_miniapp_subscription(payload: MiniappSubscriptionIn, db: Session = Depends(get_db)) -> MiniappSubscriptionOut:
+    settings = get_settings()
+    if not is_wechat_miniapp_subscription_configured():
+        raise HTTPException(status_code=503, detail="后台尚未配置微信小程序订阅消息凭据")
+    if payload.template_id != settings.wechat_subscribe_template_id:
+        raise HTTPException(status_code=400, detail="订阅模板与当前配置不一致，请刷新后重试")
+    try:
+        openid = exchange_code_for_openid(payload.code)
+    except WechatMiniappApiError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"微信登录凭证校验失败：{exc}") from exc
+
+    subscriber = db.query(WechatMiniappSubscriber).filter(WechatMiniappSubscriber.openid == openid).first()
+    if subscriber is None:
+        subscriber = WechatMiniappSubscriber(
+            openid=openid,
+            template_id=payload.template_id,
+            subscription_count=1,
+            is_active=True,
+        )
+        db.add(subscriber)
+    else:
+        subscriber.template_id = payload.template_id
+        subscriber.subscription_count += 1
+        subscriber.is_active = True
+        subscriber.last_subscribed_at = datetime.utcnow()
+    db.commit()
+    db.refresh(subscriber)
+    return MiniappSubscriptionOut(
+        status="success",
+        message="已订阅下一次日报提醒",
+        subscription_count=subscriber.subscription_count,
+    )
+
+
+@router.get("/overview", response_model=OverviewOut)
+def overview(db: Session = Depends(get_db)) -> OverviewOut:
+    report = latest_public_report(db)
+    return OverviewOut(latest_report=report, products=overview_products(db, report))
+
+
+@router.get("/products", response_model=list[ProductOut])
+def products(db: Session = Depends(get_db)) -> list[Product]:
+    return db.query(Product).filter(Product.is_active.is_(True)).order_by(Product.display_order).all()
+
+
+@router.get("/products/{code}/trend", response_model=list[TrendPoint])
+def product_trend(code: str, days: int = 60, db: Session = Depends(get_db)) -> list[dict[str, object]]:
+    product = db.query(Product).filter(Product.code == code.upper(), Product.is_active.is_(True)).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="品种不存在")
+    return trend_points(db, product.code, days=days)
+
+
+@router.get("/reports/latest", response_model=ReportOut)
+def latest_report(db: Session = Depends(get_db)) -> Report:
+    report = latest_public_report(db)
+    if not report:
+        raise HTTPException(status_code=404, detail="暂无已发布报告")
+    return report
+
+
+@router.get("/reports", response_model=list[ReportOut])
+def report_list(limit: int = 20, db: Session = Depends(get_db)) -> list[Report]:
+    safe_limit = max(1, min(limit, 100))
+    reports = (
+        db.query(Report)
+        .filter(Report.status.in_(["published", "pushed"]))
+        .order_by(desc(Report.published_at), desc(Report.generated_at))
+        .limit(safe_limit)
+        .all()
+    )
+    return [ensure_report_analysis(db, report) for report in reports if report]
+
+
+@router.get("/reports/{report_id}", response_model=ReportOut)
+def report_detail(report_id: int, db: Session = Depends(get_db)) -> Report:
+    report = db.get(Report, report_id)
+    if not report or report.status not in {"published", "pushed"}:
+        raise HTTPException(status_code=404, detail="报告不存在或未发布")
+    return ensure_report_analysis(db, report)
