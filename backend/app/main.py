@@ -59,12 +59,14 @@ app.include_router(auth.router)
 app.include_router(admin.router)
 app.include_router(public.router)
 
-# ── 生产环境：FastAPI 同时托管前端 H5 页面 ──────────────────────────────
-_H5_DIR = Path(__file__).resolve().parents[1] / "static"
-if _H5_DIR.is_dir():
-    app.mount("/", StaticFiles(directory=str(_H5_DIR), html=True), name="h5")
-
 
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
+
+
+# ── 生产环境：FastAPI 同时托管前端 H5 页面 ──────────────────────────────
+# 注意：StaticFiles mount 必须放在所有 API 路由之后，否则会拦截 API 路径
+_H5_DIR = Path(__file__).resolve().parents[1] / "static"
+if _H5_DIR.is_dir():
+    app.mount("/", StaticFiles(directory=str(_H5_DIR), html=True), name="h5")

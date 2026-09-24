@@ -1,6 +1,6 @@
-import { mockOverview, mockReports, mockTrend } from './mock'
+import { mockBasisDetail, mockBasisOverview, mockOverview, mockReports, mockTrend } from './mock.js'
 
-export const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000'
+export const API_BASE = ''
 
 function request(path, options = {}) {
   const { method = 'GET', data } = options
@@ -74,4 +74,22 @@ export function getMiniappSubscribeConfig() {
 
 export function createMiniappSubscription(payload) {
   return request('/api/public/wechat/subscriptions', { method: 'POST', data: payload })
+}
+
+export async function getBasisOverview() {
+  try {
+    return await request('/api/public/basis')
+  } catch (error) {
+    console.warn('Using mock basis overview', error)
+    return mockBasisOverview
+  }
+}
+
+export async function getBasisDetail(code, days = 30) {
+  try {
+    return await request(`/api/public/basis/${code}?days=${days}`)
+  } catch (error) {
+    console.warn('Using mock basis detail', error)
+    return mockBasisDetail
+  }
 }

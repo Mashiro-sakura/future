@@ -209,3 +209,33 @@ class MiniappSubscriptionOut(BaseModel):
     status: str
     message: str
     subscription_count: int = 0
+
+
+class BasisPoint(BaseModel):
+    trade_date: date
+    futures_contract: str | None = None
+    futures_close: float | None = None
+    spot_price: float | None = None
+    basis_value: float | None = None
+
+
+class BasisOverviewItem(BaseModel):
+    code: str
+    name: str
+    basis_value: float
+    basis_label: str
+    futures_close: float | None = None
+    spot_price: float | None = None
+    futures_contract: str | None = None
+    trade_date: date | None = None
+    days_since_last: int = 0
+    data_stale: bool = False
+    percentile: float | None = None
+    zone: str | None = None
+    sample_days: int
+    window: int
+
+
+class BasisDetailOut(BaseModel):
+    snapshot: BasisOverviewItem
+    history: list[BasisPoint]

@@ -246,3 +246,18 @@ export function mockTrend(code) {
     }
   })
 }
+
+export const mockBasisOverview = [
+  { code: 'PTA', name: 'PTA', basis_value: 48, basis_label: '升水', futures_close: 5862, spot_price: 5910, futures_contract: 'TA2609', trade_date: '2026-07-13', days_since_last: 73, data_stale: true, percentile: 38.7, zone: '中位区', sample_days: 62, window: 250 },
+  { code: 'PVC', name: 'PVC', basis_value: -40, basis_label: '贴水', futures_close: 5620, spot_price: 5580, futures_contract: 'V2609', trade_date: '2026-07-13', days_since_last: 73, data_stale: true, percentile: 24.2, zone: '中位区', sample_days: 62, window: 250 },
+  { code: 'CU', name: '沪铜', basis_value: 320, basis_label: '升水', futures_close: 78450, spot_price: 78770, futures_contract: 'CU2609', trade_date: '2026-07-13', days_since_last: 73, data_stale: true, percentile: 61.3, zone: '中位区', sample_days: 62, window: 250 }
+]
+
+export const mockBasisDetail = {
+  snapshot: mockBasisOverview[0],
+  history: [
+    { trade_date: '2026-07-09', futures_contract: 'TA2609', futures_close: 5850, spot_price: 5895, basis_value: 45 },
+    { trade_date: '2026-07-10', futures_contract: 'TA2609', futures_close: 5855, spot_price: 5900, basis_value: 45 },
+    { trade_date: '2026-07-13', futures_contract: 'TA2609', futures_close: 5862, spot_price: 5910, basis_value: 48 }
+  ]
+}

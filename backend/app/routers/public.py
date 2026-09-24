@@ -10,6 +10,8 @@ from app.database import get_db
 from app.config import get_settings
 from app.models import Product, Report, WechatMiniappSubscriber
 from app.schemas import (
+    BasisDetailOut,
+    BasisOverviewItem,
     MiniappSubscribeConfigOut,
     MiniappSubscriptionIn,
     MiniappSubscriptionOut,
@@ -19,10 +21,13 @@ from app.schemas import (
     TrendPoint,
 )
 from app.services.analytics import overview_products, trend_points
+from app.services.basis import BASIS_LOOKBACK_DAYS, basis_overview, basis_series, basis_snapshot
 from app.services.reports import ensure_report_analysis, latest_public_report
 from app.services.wechat_miniapp import WechatMiniappApiError, exchange_code_for_openid, is_wechat_miniapp_subscription_configured
 
 router = APIRouter(prefix="/api/public", tags=["public"])
+
+MIN_WINDOW = 10
 
 
 @router.get("/wechat/subscribe-config", response_model=MiniappSubscribeConfigOut)
@@ -91,6 +96,28 @@ def product_trend(code: str, days: int = 60, db: Session = Depends(get_db)) -> l
     if not product:
         raise HTTPException(status_code=404, detail="品种不存在")
     return trend_points(db, product.code, days=days)
+
+
+@router.get("/basis", response_model=list[BasisOverviewItem])
+def basis_list(window: int = BASIS_LOOKBACK_DAYS, db: Session = Depends(get_db)) -> list[dict[str, object]]:
+    safe_window = max(MIN_WINDOW, min(window, BASIS_LOOKBACK_DAYS))
+    return basis_overview(db, window=safe_window)
+
+
+@router.get("/basis/{code}", response_model=BasisDetailOut)
+def basis_detail(code: str, days: int = 120, db: Session = Depends(get_db)) -> dict[str, object]:
+    product = db.query(Product).filter(Product.code == code.upper(), Product.is_active.is_(True)).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="品种不存在")
+    if not product.futures_symbol:
+        raise HTTPException(status_code=400, detail="该品种为纯现货跟踪，无期货基差")
+    safe_days = max(MIN_WINDOW, min(days, BASIS_LOOKBACK_DAYS))
+    snapshot = basis_snapshot(db, product.code, window=BASIS_LOOKBACK_DAYS)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="该品种暂无期货或现货数据，无法计算基差")
+    history = basis_series(db, product.code, days=safe_days)
+    snapshot["name"] = product.name
+    return {"snapshot": snapshot, "history": history}
 
 
 @router.get("/reports/latest", response_model=ReportOut)

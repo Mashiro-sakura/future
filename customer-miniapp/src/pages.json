@@ -39,6 +39,14 @@
         "navigationBarBackgroundColor": "#0f172a",
         "navigationBarTextStyle": "white"
       }
+    },
+    {
+      "path": "pages/basis/index",
+      "style": {
+        "navigationBarTitleText": "基差结构",
+        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarTextStyle": "white"
+      }
     }
   ],
   "globalStyle": {
@@ -56,6 +64,10 @@
       {
         "pagePath": "pages/index/index",
         "text": "行情"
+      },
+      {
+        "pagePath": "pages/basis/index",
+        "text": "基差"
       },
       {
         "pagePath": "pages/report/list",
