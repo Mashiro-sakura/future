@@ -55,3 +55,26 @@ def test_push_without_webhook_is_logged(client: TestClient, auth_headers: dict[s
     logs_response = client.get("/api/admin/logs", headers=auth_headers)
     assert logs_response.status_code == 200
     assert logs_response.json()["push_logs"][0]["status"] == "skipped"
+
+
+def test_wechat_markdown_includes_basis_snapshot(client: TestClient, auth_headers: dict[str, str]) -> None:
+    """推送 markdown 应包含基差结构快照段，且数据停更时带警示行。"""
+    from datetime import datetime
+
+    from app.database import SessionLocal
+    from app.models import Report
+    from app.services.push import build_wechat_markdown
+
+    client.post("/api/admin/data/sync?days=5", headers=auth_headers)
+    client.post("/api/admin/reports/generate?session_name=evening", headers=auth_headers)
+    db = SessionLocal()
+    report = db.query(Report).order_by(Report.id.desc()).first()
+    assert report is not None
+    report.generated_at = report.generated_at or datetime.utcnow()
+    markdown = build_wechat_markdown(report, db=db)
+    db.close()
+
+    assert "### 基差结构快照" in markdown
+    assert "基差" in markdown
+    # 采购建议段仍在基差段之后（结构先行，行动在后）
+    assert markdown.index("### 基差结构快照") < markdown.index("### 采购建议")

@@ -142,3 +142,26 @@ def basis_overview(db: Session, window: int = BASIS_LOOKBACK_DAYS) -> list[dict[
         snapshot["name"] = product.name
         rows.append(snapshot)
     return rows
+
+
+def basis_brief_lines(db: Session, max_items: int = 10) -> list[str]:
+    """企业微信推送用基差快照行。无数据返回空列表（调用方跳过该段）。
+
+    数字纪律：停更期间在段尾加一行警示，不冒充最新数据。
+    """
+    rows = basis_overview(db)
+    if not rows:
+        return []
+    lines: list[str] = []
+    for row in rows[:max_items]:
+        basis_txt = f"基差 {row['basis_value']:+.0f} {row['basis_label']}"
+        if row["percentile"] is not None:
+            pct_txt = f"近{row['sample_days']}日分位 {row['percentile']:.0f}% {row['zone']}"
+        else:
+            pct_txt = f"样本不足（{row['sample_days']}日）"
+        lines.append(f"- **{row['code']}**：{basis_txt} · {pct_txt}")
+    stale_rows = [row for row in rows if row.get("data_stale")]
+    if stale_rows:
+        worst = max(stale_rows, key=lambda item: item["days_since_last"])
+        lines.append(f"  （基差数据截至 {worst['trade_date']}，停更 {worst['days_since_last']} 天，仅供参考）")
+    return lines

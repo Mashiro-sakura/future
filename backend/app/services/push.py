@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.config import get_settings
 from app.models import PushLog, Report, WechatMiniappSubscriber
+from app.services.basis import basis_brief_lines
 from app.services.reports import mark_report_pushed
 from app.services.wechat_miniapp import WechatMiniappApiError, is_wechat_miniapp_subscription_configured, send_subscribe_message
 
@@ -18,7 +19,7 @@ def _brief(text: str, limit: int = 180) -> str:
     return f"{normalized[:limit]}..."
 
 
-def build_wechat_markdown(report: Report) -> str:
+def build_wechat_markdown(report: Report, db: Session | None = None) -> str:
     settings = get_settings()
     lines = [
         f"## {report.title}",
@@ -36,6 +37,11 @@ def build_wechat_markdown(report: Report) -> str:
         for code, policy in urgent_policies:
             lines.append(f"- **{code}**：{policy}")
         lines.append("")
+
+    if db is not None:
+        basis_lines = basis_brief_lines(db)
+        if basis_lines:
+            lines.extend(["### 基差结构快照", *basis_lines, ""])
 
     lines.append("### 采购建议")
     for item in report.recommendations:
@@ -59,7 +65,7 @@ def push_report_to_wechat(db: Session, report: Report) -> tuple[str, str]:
         db.commit()
         return "skipped", message
 
-    payload = {"msgtype": "markdown", "markdown": {"content": build_wechat_markdown(report)}}
+    payload = {"msgtype": "markdown", "markdown": {"content": build_wechat_markdown(report, db=db)}}
     try:
         response = requests.post(settings.wechat_work_webhook_url, json=payload, timeout=10)
         response.raise_for_status()
