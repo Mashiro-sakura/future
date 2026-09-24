@@ -95,6 +95,20 @@ PRODUCT_CN_NAMES = {
 }
 SPOT_REGIONS = ("华东", "华南", "西南")
 REGIONAL_SPOT_OFFSETS = {"华东": 0.0, "华南": 28.0, "西南": -22.0}
+# futures_spot_price 返回的是交易所品种代码（TA/V/L/PP...），按 spot_symbol 映射
+AKSHARE_SPOT_SYMBOL_MAP = {
+    "PTA": "TA",
+    "PVC": "V",
+    "LLDPE": "L",
+    "PP": "PP",
+    "沪铅": "PB",
+    "棕榈油": "P",
+    "丙烯": "PL",
+    "PX": "PX",
+    "沪铜": "CU",
+}
+# 日常 sync 现货只补最近几个交易日，长历史一律走 scripts/backfill_history.py
+SPOT_SYNC_LOOKBACK_DAYS = 5
 MACRO_BASES = {
     "USD_CNY": ("美元兑人民币", 7.18, ""),
     "BRENT": ("布伦特原油", 82.0, "美元/桶"),
@@ -262,7 +276,7 @@ def _rows_from_records(records: list[dict[str, object]], product: Product, contr
                 high_price=_float(_pick(record, ["high", "最高价", "high_price"])),
                 low_price=_float(_pick(record, ["low", "最低价", "low_price"])),
                 close_price=close_price,
-                settlement_price=_float(_pick(record, ["settle", "settlement", "结算价"])),
+                settlement_price=_float(_pick(record, ["settle", "settlement", "结算价", "动态结算价"])),
                 volume=_float(_pick(record, ["volume", "成交量"])),
                 open_interest=_float(_pick(record, ["hold", "open_interest", "持仓量"])),
                 source=source,
@@ -378,12 +392,21 @@ def _fetch_realtime_row_from_sina_symbol(symbol: str, contract_code: str) -> Fut
     return None
 
 
-def _merge_realtime_with_fallback_history(product: Product, days: int, realtime_row: FuturesRow) -> list[FuturesRow]:
-    history = [row for row in _fallback_futures(product, days) if row.trade_date < realtime_row.trade_date]
-    for row in history:
-        row.contract_code = realtime_row.contract_code
-    history.append(realtime_row)
-    return history[-days:]
+def _fetch_daily_rows_from_main_sina(product: Product, days: int) -> list[FuturesRow]:
+    """主力连续合约日线（futures_main_sina，symbol 形如 TA0）。
+
+    与 scripts/backfill_history.py 同源同 tag，自动处理换月；
+    contract_code 如实标注为主力连续 symbol（TA0），非具体合约。
+    """
+    import akshare as ak  # type: ignore
+
+    symbol = (product.futures_symbol or "").strip().upper()
+    if not symbol:
+        return []
+    df = ak.futures_main_sina(symbol=symbol)
+    if df is None or df.empty:
+        return []
+    return _rows_from_records(df.to_dict("records"), product, symbol, days, "akshare:sina-main-contract")
 
 
 def _fallback_futures(product: Product, days: int = 60) -> list[FuturesRow]:
@@ -544,67 +567,101 @@ def _fallback_operating_rates(product: Product, days: int = 60) -> list[Operatin
 
 
 def _fetch_futures_from_akshare(product: Product, days: int) -> list[FuturesRow]:
+    """日线优先，实时行只补当日。
+
+    铁律：任何情况下都不把 fallback-demo 合成历史混进返回结果——
+    历史只能来自真实日线源，取不到就返回空（由上层决定是否整体降级）。
+    """
     if not _has_futures(product):
         return []
-    main_contract = _resolve_main_contract_from_sina(product) or _next_main_contract(product)
-    for symbol in _contract_symbol_variants(main_contract):
-        try:
+    daily_rows: list[FuturesRow] = []
+    # 1) 主力连续日线（与回填脚本同源，自动换月）
+    try:
+        daily_rows = _fetch_daily_rows_from_main_sina(product, days)
+    except Exception:
+        daily_rows = []
+    # 2) 具体合约日线兜底（sina jsonp → akshare daily）
+    if not daily_rows:
+        main_contract = _resolve_main_contract_from_sina(product) or _next_main_contract(product)
+        for symbol in _contract_symbol_variants(main_contract):
+            try:
+                daily_rows = _fetch_daily_rows_from_sina_symbol(symbol, product, main_contract, days)
+                if daily_rows:
+                    break
+            except Exception:
+                pass
+            try:
+                daily_rows = _fetch_daily_rows_from_akshare_symbol(symbol, product, main_contract, days)
+                if daily_rows:
+                    break
+            except Exception:
+                pass
+    if not daily_rows:
+        return []
+    # 3) 实时行只在比最后一条日线更新时追加（盘中补当日，绝不伪造历史）
+    try:
+        main_contract = _resolve_main_contract_from_sina(product) or _next_main_contract(product)
+        for symbol in _contract_symbol_variants(main_contract):
             realtime_row = _fetch_realtime_row_from_sina_symbol(symbol, main_contract)
-            if realtime_row:
-                return _merge_realtime_with_fallback_history(product, days, realtime_row)
-        except Exception:
-            pass
-    for symbol in _contract_symbol_variants(main_contract):
-        try:
-            daily_rows = _fetch_daily_rows_from_sina_symbol(symbol, product, main_contract, days)
-            if daily_rows:
-                return daily_rows
-        except Exception:
-            pass
-        try:
-            daily_rows = _fetch_daily_rows_from_akshare_symbol(symbol, product, main_contract, days)
-            if daily_rows:
-                return daily_rows
-        except Exception:
-            pass
-    return []
+            if realtime_row and realtime_row.trade_date > daily_rows[-1].trade_date:
+                daily_rows.append(realtime_row)
+                break
+    except Exception:
+        pass
+    return daily_rows[-days:]
+
+
+def _recent_weekdays(count: int, today: date | None = None) -> list[date]:
+    """最近 count 个工作日（周末跳过；节假日由数据方返回空自然过滤）。"""
+    today = today or date.today()
+    days_found: list[date] = []
+    cursor = today
+    while len(days_found) < count:
+        if cursor.weekday() < 5:
+            days_found.append(cursor)
+        cursor -= timedelta(days=1)
+    return days_found
 
 
 def _fetch_spot_from_akshare(product: Product, days: int) -> list[SpotRow]:
+    """按交易日调用 ak.futures_spot_price(yyyymmdd) 取基准现货价。
+
+    该接口一次返回全品种，华东记真实来源，华南/西南按固定偏移估算并打
+    regional-estimate 标。日常 sync 只补最近 SPOT_SYNC_LOOKBACK_DAYS 个交易日，
+    长历史回填走 scripts/backfill_history.py。
+    """
     import akshare as ak  # type: ignore
 
-    candidates = [
-        ("spot_price_qh", {"symbol": product.spot_symbol}),
-        ("futures_spot_price", {"symbol": product.spot_symbol}),
-    ]
-    for function_name, kwargs in candidates:
-        func = getattr(ak, function_name, None)
-        if func is None:
-            continue
+    ak_symbol = AKSHARE_SPOT_SYMBOL_MAP.get((product.spot_symbol or "").strip())
+    if not ak_symbol:
+        return []
+    lookback = max(1, min(days, SPOT_SYNC_LOOKBACK_DAYS))
+    rows: list[SpotRow] = []
+    for trade_day in _recent_weekdays(lookback):
         try:
-            df = func(**kwargs)
-        except TypeError:
+            df = ak.futures_spot_price(trade_day.strftime("%Y%m%d"))
+        except Exception:
             continue
         if df is None or getattr(df, "empty", True):
             continue
-        rows: list[SpotRow] = []
-        for record in df.tail(days).to_dict("records"):
-            trade_date = _parse_date(_pick(record, ["date", "日期", "trade_date"]))
-            price = _float(_pick(record, ["price", "现货价格", "spot_price", "价格", product.spot_symbol]))
-            if not trade_date or price is None:
+        for record in df.to_dict("records"):
+            if str(_pick(record, ["symbol"]) or "").strip().upper() != ak_symbol:
+                continue
+            trade_date = _parse_date(_pick(record, ["date", "日期", "trade_date"])) or trade_day
+            price = _float(_pick(record, ["spot_price", "price", "现货价格", "价格"]))
+            if price is None:
                 continue
             rows.extend(
                 SpotRow(
                     trade_date=trade_date,
                     price=round(price + REGIONAL_SPOT_OFFSETS[region], 2),
                     region=region,
-                    source=f"akshare:{function_name}" if region == "华东" else f"akshare:{function_name}:regional-estimate",
+                    source="akshare:futures_spot_price" if region == "华东" else "akshare:futures_spot_price:regional-estimate",
                 )
                 for region in SPOT_REGIONS
             )
-        if rows:
-            return rows
-    return []
+            break
+    return rows
 
 
 def fetch_futures_prices(product: Product, days: int = 60) -> list[FuturesRow]:
