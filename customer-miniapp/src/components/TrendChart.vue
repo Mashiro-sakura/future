@@ -84,10 +84,10 @@ function drawChart() {
   const ctx = uni.createCanvasContext('trendCanvas')
   const area = { x: 34, y: 18, w: canvasSize.width - 52, h: canvasSize.height - 46 }
   ctx.clearRect(0, 0, canvasSize.width, canvasSize.height)
-  ctx.setFillStyle('#ffffff')
+  ctx.setFillStyle('#131826')
   ctx.fillRect(0, 0, canvasSize.width, canvasSize.height)
 
-  ctx.setStrokeStyle('#e5e7eb')
+  ctx.setStrokeStyle('#1f2637')
   ctx.setLineWidth(1)
   for (let i = 0; i <= 4; i += 1) {
     const y = area.y + (area.h / 4) * i
@@ -98,19 +98,19 @@ function drawChart() {
   }
 
   if (!points.length) {
-    ctx.setFillStyle('#94a3b8')
+    ctx.setFillStyle('#5d6779')
     ctx.setFontSize(14)
     ctx.fillText('暂无趋势数据', 120, 105)
     ctx.draw()
     return
   }
 
-  drawLine(ctx, points, 'futures_close', '#2563eb', area)
+  drawLine(ctx, points, 'futures_close', '#4f8ff7', area)
   drawLine(ctx, points, 'spot_price', '#f97316', area)
 
   const first = points[0]
   const last = points[points.length - 1]
-  ctx.setFillStyle('#64748b')
+  ctx.setFillStyle('#7d879c')
   ctx.setFontSize(10)
   ctx.fillText(String(first.trade_date).slice(5), area.x, canvasSize.height - 12)
   ctx.fillText(String(last.trade_date).slice(5), canvasSize.width - 64, canvasSize.height - 12)
@@ -140,9 +140,9 @@ onMounted(() => nextTick(drawChart))
 <style scoped>
 .chart-wrap {
   padding: 24rpx;
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  background: #fff;
+  border: 1rpx solid #1f2637;
+  border-radius: 8rpx;
+  background: #131826;
 }
 
 .chart-head {
@@ -156,21 +156,21 @@ onMounted(() => nextTick(drawChart))
   display: block;
   font-size: 30rpx;
   font-weight: 700;
-  color: #111827;
+  color: #e6eaf2;
 }
 
 .chart-subtitle {
   display: block;
   margin-top: 4rpx;
   font-size: 22rpx;
-  color: #64748b;
+  color: #7d879c;
 }
 
 .legend {
   display: flex;
   gap: 14rpx;
   font-size: 22rpx;
-  color: #475569;
+  color: #a7b0c2;
 }
 
 .legend-item {
@@ -186,7 +186,7 @@ onMounted(() => nextTick(drawChart))
 }
 
 .futures {
-  background: #2563eb;
+  background: #4f8ff7;
 }
 
 .spot {
@@ -205,8 +205,8 @@ onMounted(() => nextTick(drawChart))
   margin-top: 14rpx;
   padding: 14rpx 16rpx;
   border-radius: 10rpx;
-  background: #f8fafc;
-  color: #334155;
+  background: #161d2c;
+  color: #c3cad9;
   font-size: 22rpx;
 }
 </style>

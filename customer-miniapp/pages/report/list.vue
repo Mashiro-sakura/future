@@ -72,7 +72,7 @@ onShow(loadReports)
 
 .eyebrow {
   display: block;
-  color: #93c5fd;
+  color: #7ea8f0;
   font-size: 22rpx;
   font-weight: 700;
 }
@@ -89,7 +89,7 @@ onShow(loadReports)
   height: 60rpx;
   margin: 0;
   border-radius: 8rpx;
-  background: #2563eb;
+  background: #4f8ff7;
   color: #fff;
   font-size: 24rpx;
   line-height: 60rpx;
@@ -97,7 +97,7 @@ onShow(loadReports)
 
 .empty {
   padding: 40rpx 24rpx;
-  color: #64748b;
+  color: #7d879c;
   font-size: 26rpx;
   text-align: center;
 }
@@ -119,7 +119,7 @@ onShow(loadReports)
 
 .report-title {
   display: block;
-  color: #111827;
+  color: #e6eaf2;
   font-size: 30rpx;
   font-weight: 800;
   line-height: 1.35;
@@ -128,7 +128,7 @@ onShow(loadReports)
 .report-meta {
   display: block;
   margin-top: 8rpx;
-  color: #64748b;
+  color: #7d879c;
   font-size: 23rpx;
 }
 
@@ -136,8 +136,8 @@ onShow(loadReports)
   flex-shrink: 0;
   padding: 8rpx 12rpx;
   border-radius: 8rpx;
-  background: #ecfdf5;
-  color: #047857;
+  background: #123125;
+  color: #0dbf7e;
   font-size: 22rpx;
 }
 
@@ -161,7 +161,7 @@ onShow(loadReports)
   display: -webkit-box;
   margin-top: 18rpx;
   overflow: hidden;
-  color: #334155;
+  color: #c3cad9;
   font-size: 25rpx;
   line-height: 1.55;
   white-space: pre-wrap;

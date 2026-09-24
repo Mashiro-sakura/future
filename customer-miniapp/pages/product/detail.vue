@@ -13,7 +13,7 @@
 
     <view class="panel metrics" v-if="latest">
       <view class="metric">
-        <text class="metric-label">期货价格</text>
+        <text class="metric-label">{{ hasFutures ? '期货价格' : '期货价格' }}</text>
         <text class="metric-value">{{ money(latest.futures_close) }}</text>
       </view>
       <view class="metric">
@@ -127,7 +127,7 @@ onLoad(async (query) => {
 .contract {
   display: block;
   margin-top: 8rpx;
-  color: #93c5fd;
+  color: #7ea8f0;
   font-size: 24rpx;
   font-weight: 700;
 }
@@ -137,7 +137,7 @@ onLoad(async (query) => {
   height: 58rpx;
   margin: 0;
   border-radius: 8rpx;
-  background: #2563eb;
+  background: #4f8ff7;
   color: #fff;
   font-size: 24rpx;
   line-height: 58rpx;
@@ -154,19 +154,19 @@ onLoad(async (query) => {
   min-height: 116rpx;
   padding: 18rpx;
   border-radius: 10rpx;
-  background: #f8fafc;
+  background: #161d2c;
 }
 
 .metric-label {
   display: block;
-  color: #64748b;
+  color: #7d879c;
   font-size: 22rpx;
 }
 
 .metric-value {
   display: block;
   margin-top: 10rpx;
-  color: #111827;
+  color: #e6eaf2;
   font-size: 34rpx;
   font-weight: 800;
 }
@@ -177,14 +177,14 @@ onLoad(async (query) => {
 
 .section-title {
   display: block;
-  color: #111827;
+  color: #e6eaf2;
   font-size: 30rpx;
   font-weight: 800;
 }
 
 .analysis-section {
   padding: 18rpx 0;
-  border-top: 1rpx solid #e5e7eb;
+  border-top: 1rpx solid #1f2637;
 }
 
 .analysis-section:first-of-type {
@@ -202,7 +202,7 @@ onLoad(async (query) => {
 .analysis-text {
   display: block;
   margin-top: 10rpx;
-  color: #334155;
+  color: #c3cad9;
   font-size: 26rpx;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -211,7 +211,7 @@ onLoad(async (query) => {
 .analysis-conclusion {
   display: block;
   margin-top: 10rpx;
-  color: #dc2626;
+  color: #f0455c;
   font-size: 28rpx;
   font-weight: 900;
   line-height: 1.6;

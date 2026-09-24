@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>期现分析客户面预览</title>
+    <title>期现分析</title>
     <style>
       :root {
-        color: #182033;
-        background: #f6f7fb;
+        color: #e6eaf2;
+        background: #0b0e17;
         font-family:
           -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
       }
@@ -18,58 +18,64 @@
 
       body {
         margin: 0;
-        background: #f6f7fb;
+        background: #0b0e17;
       }
 
       .app {
         width: min(100%, 430px);
         min-height: 100vh;
         margin: 0 auto;
-        background: #f6f7fb;
+        background: #0b0e17;
+      }
+
+      .num {
+        font-variant-numeric: tabular-nums;
       }
 
       .top {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        min-height: 132px;
-        padding: 24px 20px;
-        background: #0f172a;
-        color: #fff;
+        padding: 18px 20px;
+        border-bottom: 1px solid #1f2637;
+        background: #0d1322;
+        color: #e6eaf2;
       }
 
       .eyebrow {
-        margin: 0 0 6px;
-        color: #93c5fd;
-        font-size: 13px;
+        margin: 0 0 5px;
+        color: #7ea8f0;
+        font-size: 12px;
       }
 
       h1 {
         margin: 0;
-        font-size: 28px;
-        letter-spacing: 0;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 1px;
       }
 
       .refresh {
-        width: 68px;
-        height: 36px;
-        border: 0;
-        border-radius: 8px;
-        background: #f97316;
-        color: #fff;
+        width: 60px;
+        height: 32px;
+        border: 1px solid #4f8ff7;
+        border-radius: 5px;
+        background: transparent;
+        color: #4f8ff7;
+        font-size: 12px;
         font-weight: 700;
       }
 
       main {
         display: grid;
-        gap: 14px;
-        padding: 14px;
+        gap: 12px;
+        padding: 12px;
       }
 
       .panel {
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        background: #fff;
+        border: 1px solid #1f2637;
+        border-radius: 6px;
+        background: #131826;
       }
 
       .report {
@@ -77,48 +83,48 @@
         align-items: center;
         justify-content: space-between;
         gap: 14px;
-        padding: 16px;
+        padding: 14px 16px;
       }
 
       .report h2 {
         margin: 0;
         overflow: hidden;
-        color: #111827;
-        font-size: 17px;
+        color: #e6eaf2;
+        font-size: 16px;
+        font-weight: 600;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
 
       .report p {
-        margin: 6px 0 0;
-        color: #64748b;
-        font-size: 13px;
+        margin: 5px 0 0;
+        color: #5d6779;
+        font-size: 12px;
       }
 
       .link {
         flex: 0 0 auto;
-        color: #2563eb;
-        font-size: 13px;
+        color: #4f8ff7;
+        font-size: 12px;
         font-weight: 700;
       }
 
       .product-list {
         display: grid;
-        gap: 12px;
+        gap: 10px;
       }
 
       .product {
-        padding: 16px;
+        padding: 14px 16px;
       }
 
       .product.active {
-        border-color: #2563eb;
-        box-shadow: 0 0 0 1px #2563eb inset;
+        border-color: #4f8ff7;
+        box-shadow: 0 0 0 1px #4f8ff7 inset;
       }
 
       .product-head,
-      .price-row,
-      .advice-head {
+      .price-row {
         display: flex;
         align-items: flex-start;
         justify-content: space-between;
@@ -126,93 +132,89 @@
       }
 
       .code {
+        display: inline-block;
         margin: 0;
-        color: #111827;
-        font-size: 24px;
-        font-weight: 800;
+        color: #e6eaf2;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: 1px;
       }
 
       .name {
         margin: 2px 0 0;
-        color: #64748b;
+        color: #5d6779;
         font-size: 12px;
       }
 
       .main-contract {
-        color: #2563eb;
-        font-weight: 700;
-      }
-
-      .advice {
-        min-width: 76px;
-        padding: 6px 8px;
-        border-radius: 7px;
-        background: #ecfdf5;
-        color: #047857;
-        font-size: 13px;
-        font-weight: 700;
-        text-align: center;
+        color: #7ea8f0;
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
       }
 
       .price-row {
-        margin-top: 16px;
+        margin-top: 14px;
       }
 
       .label {
         display: block;
-        color: #64748b;
-        font-size: 12px;
+        color: #5d6779;
+        font-size: 11px;
       }
 
       .value {
         display: block;
-        margin-top: 5px;
-        color: #111827;
-        font-size: 21px;
-        font-weight: 800;
+        margin-top: 4px;
+        color: #e6eaf2;
+        font-size: 20px;
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
       }
 
       .change {
         display: block;
         margin-top: 2px;
-        color: #64748b;
+        color: #7d879c;
         font-size: 12px;
+        font-variant-numeric: tabular-nums;
       }
 
       .positive {
-        color: #c2410c;
+        color: #f0455c;
       }
 
       .negative {
-        color: #0f766e;
+        color: #0dbf7e;
       }
 
       .basis-row {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        margin-top: 14px;
+        margin-top: 12px;
       }
 
       .basis-row span {
-        padding: 5px 8px;
-        border-radius: 7px;
-        background: #f1f5f9;
-        color: #475569;
-        font-size: 12px;
+        padding: 4px 9px;
+        border: 1px solid #232b3d;
+        border-radius: 4px;
+        background: #1a2130;
+        color: #a7b0c2;
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
       }
 
       .chart-panel,
       .summary,
-      .analysis,
-      .recommendations {
-        padding: 16px;
+      .analysis {
+        padding: 14px 16px;
       }
 
       .section-title {
-        margin: 0 0 12px;
-        color: #111827;
-        font-size: 17px;
+        margin: 0 0 10px;
+        color: #e6eaf2;
+        font-size: 15px;
+        font-weight: 600;
       }
 
       canvas {
@@ -222,92 +224,41 @@
 
       .summary-text {
         margin: 0;
-        color: #334155;
-        font-size: 14px;
+        color: #c3cad9;
+        font-size: 13px;
         line-height: 1.7;
         white-space: pre-wrap;
       }
 
       .analysis-grid {
         display: grid;
-        gap: 12px;
+        gap: 10px;
       }
 
       .analysis-item {
         padding: 12px;
-        border-radius: 8px;
-        background: #f8fafc;
+        border: 1px solid #1f2637;
+        border-radius: 5px;
+        background: #161d2c;
       }
 
       .analysis-item h3 {
-        margin: 0 0 8px;
-        color: #1d4ed8;
-        font-size: 15px;
+        margin: 0 0 7px;
+        color: #4f8ff7;
+        font-size: 13px;
       }
 
       .conclusion-text {
-        color: #dc2626;
-        font-size: 15px;
-        font-weight: 900;
-      }
-
-      .recommendation {
-        padding: 14px 0;
-        border-top: 1px solid #e5e7eb;
-      }
-
-      .recommendation:first-of-type {
-        border-top: 0;
-        padding-top: 0;
-      }
-
-      .recommendation h3 {
-        margin: 0;
-        color: #111827;
-        font-size: 18px;
-      }
-
-      .recommendation .action {
-        padding: 5px 8px;
-        border-radius: 7px;
-        background: #eff6ff;
-        color: #1d4ed8;
-        font-size: 13px;
+        color: #f0455c;
         font-weight: 700;
       }
 
-      .recommendation p {
-        margin: 10px 0 0;
-        color: #334155;
-        font-size: 14px;
-        line-height: 1.55;
-      }
-
-      .risk {
-        color: #b45309 !important;
-      }
-
-      .bar {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        margin-top: 10px;
-        color: #64748b;
-        font-size: 12px;
-      }
-
-      .track {
-        flex: 1;
-        height: 7px;
-        overflow: hidden;
-        border-radius: 999px;
-        background: #e5e7eb;
-      }
-
-      .fill {
-        height: 100%;
-        border-radius: 999px;
-        background: #f97316;
+      .disclaimer {
+        margin: 0;
+        padding: 4px 0 14px;
+        color: #5d6779;
+        font-size: 11px;
+        text-align: center;
       }
     </style>
   </head>
@@ -316,7 +267,7 @@
       <header class="top">
         <div>
           <p class="eyebrow" id="sessionText">日报</p>
-          <h1>期现采购建议</h1>
+          <h1>期现分析</h1>
         </div>
         <button class="refresh" id="refreshBtn">刷新</button>
       </header>
@@ -331,14 +282,11 @@
           <h2 class="section-title">四维分析</h2>
           <div class="analysis-grid" id="analysisGrid"></div>
         </section>
-        <section class="recommendations panel">
-          <h2 class="section-title">采购建议</h2>
-          <div id="recommendations"></div>
-        </section>
         <section class="summary panel">
           <h2 class="section-title">行情摘要</h2>
           <p class="summary-text" id="summaryText"></p>
         </section>
+        <p class="disclaimer">结构描述，非买卖指令</p>
       </main>
     </div>
 
@@ -351,35 +299,21 @@
           session_name: 'evening',
           title: '2026-07-09 PTA/PVC/塑料期现晚报',
           market_summary:
-            'PTA：主力合约TA2609，期货5862，现货5910，基差48，建议小单补库。\nPVC：主力合约V2609，期货5620，现货5580，基差-40，建议逢低采购。\nLLDPE：主力合约L2609，期货8190，现货8250，基差60，建议观望等待。\nPP：主力合约PP2609，期货7442，现货7380，基差-62，建议积极采购。\nOCT：现货8200，暂不做期货盘面分析，建议观望等待。',
+            'PTA：主力合约TA2609，期货5862，现货5910，基差48。\nPVC：主力合约V2609，期货5620，现货5580，基差-40。\nLLDPE：主力合约L2609，期货8190，现货8250，基差60。\nPP：主力合约PP2609，期货7442，现货7380，基差-62。\nOCT：现货8200，纯现货跟踪，无期货基差。',
           price_behavior_analysis:
             'PTA主力合约TA2609：期货+0.74%，现货+0.35%，持仓+1.42%，盘面资金偏强。\nPVC主力合约V2609：现货弱于盘面，短线仍需观察承接。',
           fundamentals_analysis:
-            'PTA聚酯刚需仍在，适合小单补库；PVC地产链需求恢复偏慢；LLDPE维持安全库存；PP低价资源可分批锁定。',
+            'PTA聚酯刚需仍在；PVC地产链需求恢复偏慢；LLDPE库存平稳；PP现货贴水扩大。',
           macro_analysis: '原油、煤化工成本和人民币汇率仍是塑化链条主要外部变量，当前宏观信号未形成单边共振。',
           policy_analysis:
-            '关注能耗、安全生产、环保检查、地产链支持政策，以及交易所保证金和限仓调整。',
-          recommendations: [
-            ['PTA', '小单补库', 'PTA盘面偏强，现货跟涨温和，刚需采购可保持小单节奏。', '关注原油和聚酯开工波动，避免高位集中补库。', 76],
-            ['PVC', '逢低采购', 'PVC现货较期货小幅贴水，价格处于近期偏低区间。', '地产需求恢复仍需观察，库存不宜一次性抬高。', 70],
-            ['LLDPE', '观望等待', 'LLDPE期现价差不大，短线缺少明确采购窗口。', '若原油或进口到港扰动增强，需调整补库节奏。', 66],
-            ['PP', '积极采购', 'PP现货贴水扩大，低价资源适合分批锁定。', '需求端订单不足时，建议保留部分现金仓位。', 82],
-            ['OCT', '观望等待', '辛醇暂按现货品种跟踪，等待区域报价、库存和开工率给出更明确采购窗口。', '关注丁辛醇装置开工、增塑剂需求和现货报价样本偏差。', 66]
-          ].map(([product_code, action, basis, risk_note, confidence], index) => ({
-            id: index + 1,
-            product_code,
-            action,
-            basis,
-            risk_note,
-            confidence
-          }))
+            '关注能耗、安全生产、环保检查、地产链支持政策，以及交易所保证金和限仓调整。'
         },
         products: [
-          ['PTA', 'PTA', 5862, 5910, 48, 0.74, 0.35, 1.42, '小单补库', 76],
-          ['PVC', 'PVC', 5620, 5580, -40, -0.52, -0.83, 0.66, '逢低采购', 70],
-          ['LLDPE', '线型低密度聚乙烯', 8190, 8250, 60, 0.18, 0.12, -0.41, '观望等待', 66],
-          ['PP', '聚丙烯', 7442, 7380, -62, -0.34, -1.08, 2.2, '积极采购', 82],
-          ['OCT', '辛醇', null, 8200, null, null, 0.12, null, '观望等待', 66]
+          ['PTA', 'PTA', 5862, 5910, 48, 0.74, 0.35, 1.42],
+          ['PVC', 'PVC', 5620, 5580, -40, -0.52, -0.83, 0.66],
+          ['LLDPE', '线型低密度聚乙烯', 8190, 8250, 60, 0.18, 0.12, -0.41],
+          ['PP', '聚丙烯', 7442, 7380, -62, -0.34, -1.08, 2.2],
+          ['OCT', '辛醇', null, 8200, null, null, 0.12, null]
         ].map(
           ([
             code,
@@ -389,9 +323,7 @@
             basis_value,
             futures_change_pct,
             spot_change_pct,
-            open_interest_change_pct,
-            recommendation,
-            confidence
+            open_interest_change_pct
           ]) => ({
             code,
             name,
@@ -401,9 +333,7 @@
             basis_value,
             futures_change_pct,
             spot_change_pct,
-            open_interest_change_pct,
-            recommendation,
-            confidence
+            open_interest_change_pct
           })
         )
       }
@@ -463,19 +393,16 @@
         if (matched) return matched
 
         const product = products.find((item) => item.code === code) || {}
-        const advice = (report.recommendations || []).find((item) => item.product_code === code) || {}
         const spotOnly = !product.futures_contract
         return {
           product_code: code,
           price_behavior: spotOnly
-            ? `${code}（${product.name || '现货品种'}）为现货品种，暂不做期货盘面分析。价格行为以华东现货${money(product.spot_price)}、华东/华南/西南区域报价、库存、开工率和产业链成本传导为主。`
-            : `${code}主力合约${product.futures_contract || '-'}，期货${money(product.futures_close)}，现货${money(product.spot_price)}，基差${signed(product.basis_value)}，持仓变化${pct(product.open_interest_change_pct)}。K线/形态：离线样本暂按震荡结构处理，需继续观察头肩顶/底、W底、M顶是否确认。均线/多周期：重点跟踪MA5、MA20、MA60是否同向共振。持仓量：结合价格涨跌判断增仓推动或减仓修复。Al Brooks语境：等待连续趋势K线或二次进入确认。YTC语境：先看高周期方向，再看支撑压力位的突破失败或回踩确认。`,
-          fundamentals: advice.basis || `${code}区域现货：华东${money(product.spot_price)}，华南${product.spot_price ? money(Number(product.spot_price) + 30) : '-'}，西南${product.spot_price ? money(Number(product.spot_price) - 20) : '-'}。开工率离线样本暂按75%附近处理。社会库存与工厂库存离线样本暂按平稳处理；库存周期：当前偏主动去库存/观望阶段，需继续跟踪社会库存是否累积、工厂库存是否转移到贸易环节。供需判断：暂未出现明显供需失衡，采购以订单覆盖和安全库存为主。`,
+            ? `${code}（${product.name || '现货品种'}）为现货品种，暂不做期货盘面分析。价格行为以华东现货${money(product.spot_price)}、区域报价、库存、开工率和产业链成本传导为主。`
+            : `${code}主力合约${product.futures_contract || '-'}，期货${money(product.futures_close)}，现货${money(product.spot_price)}，基差${signed(product.basis_value)}，持仓变化${pct(product.open_interest_change_pct)}。`,
+          fundamentals: `${code}区域现货：华东${money(product.spot_price)}。开工率、社会库存与工厂库存详见日报；库存周期需持续跟踪。`,
           macro: `${code}宏观面重点跟踪美元兑人民币、中国经济、美国经济、原油和产业链传导。`,
-          policy:
-            advice.risk_note ||
-            `${code}每日政策/产业消息：安全生产：关注生产、仓储和运输环节。环保：关注排放、能耗和地方环保检查。检修：跟踪相关装置计划检修、临停和重启进度。若出现影响供需平衡的重大事件，政策栏和企业微信会置顶推送。`,
-          conclusion: `结论：离线样本按四维分析综合判断，建议${advice.action || product.recommendation || '观望等待'}。`
+          policy: `${code}每日政策/产业消息：安全生产、环保检查、装置检修动态，详见日报政策栏。`,
+          conclusion: `结论：以上为 ${code} 期现结构描述，非买卖指令。`
         }
       }
 
@@ -520,9 +447,8 @@
                   <div>
                     <p class="code">${item.code}</p>
                     <p class="name">${item.name}</p>
-                    <p class="name main-contract">${item.futures_contract ? `主力合约 ${item.futures_contract}` : '现货品种'}</p>
                   </div>
-                  <span class="advice">${item.recommendation || '待更新'}</span>
+                  <span class="name main-contract">${item.futures_contract ? `主力 ${item.futures_contract}` : '现货品种'}</span>
                 </div>
                 <div class="price-row">
                   <div>
@@ -539,51 +465,12 @@
                 <div class="basis-row">
                   <span>${item.futures_contract ? `基差 ${signed(item.basis_value)}` : '无期货基差'}</span>
                   <span>${item.futures_contract ? `持仓 ${pct(item.open_interest_change_pct)}` : '现货跟踪'}</span>
-                  <span>置信度 ${item.confidence || '-'}%</span>
-                </div>
-              </article>
-            `
-          )
-          .join('')
-        document.querySelector('#recommendations').innerHTML = (data.latest_report?.recommendations || [])
-          .map(
-            (item) => `
-              <article class="recommendation">
-                <div class="advice-head">
-                  <h3>${item.product_code}</h3>
-                  <span class="action">${item.action}</span>
-                </div>
-                <p>${item.basis}</p>
-                <p class="risk">${item.risk_note}</p>
-                <div class="bar">
-                  <div class="track"><div class="fill" style="width:${item.confidence}%"></div></div>
-                  <span>${item.confidence}%</span>
                 </div>
               </article>
             `
           )
           .join('')
         renderAnalysis(data.latest_report || {}, selectedCode, data.products || [])
-        /*
-        const report = data.latest_report || {}
-        const sections = [
-          ['价格行为', report.price_behavior_analysis],
-          ['基本面', report.fundamentals_analysis],
-          ['宏观面', report.macro_analysis],
-          ['政策面', report.policy_analysis]
-        ]
-        document.querySelector('#analysisGrid').innerHTML = sections
-          .map(
-            ([title, content]) => `
-              <article class="analysis-item">
-                <h3>${title}</h3>
-                <p class="summary-text">${content || '-'}</p>
-              </article>
-            `
-          )
-          .join('')
-        document.querySelector('#summaryText').textContent = data.latest_report?.market_summary || '暂无摘要'
-        */
         document.querySelector('#summaryText').textContent = data.latest_report?.market_summary || '-'
         document.querySelectorAll('.product').forEach((card) => {
           card.addEventListener('click', () => {
@@ -604,9 +491,9 @@
         const height = canvas.height
         const area = { x: 56, y: 34, w: width - 86, h: height - 78 }
         ctx.clearRect(0, 0, width, height)
-        ctx.fillStyle = '#fff'
+        ctx.fillStyle = '#131826'
         ctx.fillRect(0, 0, width, height)
-        ctx.strokeStyle = '#e5e7eb'
+        ctx.strokeStyle = '#1f2637'
         ctx.lineWidth = 2
         for (let i = 0; i <= 4; i += 1) {
           const y = area.y + (area.h / 4) * i
@@ -615,9 +502,9 @@
           ctx.lineTo(area.x + area.w, y)
           ctx.stroke()
         }
-        drawLine(points, 'futures_close', '#2563eb', area, ctx)
+        drawLine(points, 'futures_close', '#4f8ff7', area, ctx)
         drawLine(points, 'spot_price', '#f97316', area, ctx)
-        ctx.fillStyle = '#64748b'
+        ctx.fillStyle = '#7d879c'
         ctx.font = '22px sans-serif'
         ctx.fillText(points[0]?.trade_date?.slice(5) || '', area.x, height - 20)
         ctx.fillText(points.at(-1)?.trade_date?.slice(5) || '', width - 104, height - 20)

@@ -2,12 +2,12 @@
   <view class="page home">
     <view class="top">
       <view>
-        <text class="eyebrow">{{ sessionText }}</text>
-        <text class="title">期现采购建议</text>
+        <text class="eyebrow">{{ sessionText }} · {{ todayText }}</text>
+        <text class="title">期现分析</text>
       </view>
       <view class="top-actions">
-        <button class="subscribe" :loading="subscribeLoading" @tap="subscribeDaily">订阅日报</button>
-        <button class="refresh" @tap="loadData">刷新</button>
+        <button class="ghost-btn" :loading="subscribeLoading" @tap="subscribeDaily">订阅</button>
+        <button class="ghost-btn accent" @tap="loadData">刷新</button>
       </view>
     </view>
 
@@ -16,35 +16,33 @@
         <text class="report-title">{{ overview.latest_report.title }}</text>
         <text class="report-date">{{ overview.latest_report.report_date }}</text>
       </view>
-      <text class="report-action">查看日报</text>
+      <text class="report-action">查看日报 ›</text>
     </view>
 
     <view class="grid">
       <view v-for="item in overview.products" :key="item.code" class="product panel" @tap="openProduct(item)">
         <view class="product-head">
-          <view>
+          <view class="product-id">
             <text class="code">{{ item.code }}</text>
             <text class="name">{{ item.name }}</text>
-            <text class="contract">{{ contractText(item) }}</text>
           </view>
-          <text class="advice">{{ item.recommendation || '待更新' }}</text>
+          <text class="contract">{{ contractText(item) }}</text>
         </view>
         <view class="price-row">
-          <view>
+          <view class="price-cell">
             <text class="label">{{ item.futures_contract ? '期货' : '期货不适用' }}</text>
-            <text class="value">{{ money(item.futures_close) }}</text>
-            <text class="change" :class="tone(item.futures_change_pct)">{{ pct(item.futures_change_pct) }}</text>
+            <text class="value num">{{ money(item.futures_close) }}</text>
+            <text class="change num" :class="tone(item.futures_change_pct)">{{ pct(item.futures_change_pct) }}</text>
           </view>
-          <view>
+          <view class="price-cell">
             <text class="label">现货</text>
-            <text class="value">{{ money(item.spot_price) }}</text>
-            <text class="change" :class="tone(item.spot_change_pct)">{{ pct(item.spot_change_pct) }}</text>
+            <text class="value num">{{ money(item.spot_price) }}</text>
+            <text class="change num" :class="tone(item.spot_change_pct)">{{ pct(item.spot_change_pct) }}</text>
           </view>
         </view>
-        <view class="basis-row">
-          <text>{{ item.futures_contract ? `基差 ${signed(item.basis_value)}` : '无期货基差' }}</text>
-          <text>{{ item.futures_contract ? `持仓 ${pct(item.open_interest_change_pct)}` : '现货跟踪' }}</text>
-          <text>置信度 {{ item.confidence || '-' }}%</text>
+        <view class="meta-row">
+          <text class="chip">{{ item.futures_contract ? `基差 ${signed(item.basis_value)}` : '无期货基差' }}</text>
+          <text class="chip">{{ item.futures_contract ? `持仓 ${pct(item.open_interest_change_pct)}` : '现货跟踪' }}</text>
         </view>
       </view>
     </view>
@@ -53,6 +51,8 @@
       <text class="section-title">行情摘要</text>
       <text class="summary-text">{{ overview.latest_report.market_summary }}</text>
     </view>
+
+    <text class="disclaimer">结构描述，非买卖指令</text>
   </view>
 </template>
 
@@ -70,6 +70,11 @@ const subscribeConfig = ref(null)
 const sessionText = computed(() => {
   const session = overview.latest_report?.session_name
   return session === 'morning' ? '早报' : session === 'evening' ? '晚报' : '日报'
+})
+
+const todayText = computed(() => {
+  const now = new Date()
+  return `${now.getMonth() + 1}/${now.getDate()}`
 })
 
 function money(value) {
@@ -95,7 +100,7 @@ function tone(value) {
 }
 
 function contractText(item) {
-  return item.futures_contract ? `主力合约 ${item.futures_contract}` : '现货品种'
+  return item.futures_contract ? `主力 ${item.futures_contract}` : '现货品种'
 }
 
 async function loadData() {
@@ -181,32 +186,37 @@ onMounted(() => {
 .home {
   display: flex;
   flex-direction: column;
-  gap: 24rpx;
+  gap: 20rpx;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.5rpx;
 }
 
 .top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  min-height: 150rpx;
-  padding: 28rpx 26rpx;
-  border-radius: 0 0 24rpx 24rpx;
-  background: #0f172a;
-  color: #fff;
+  padding: 24rpx 26rpx;
+  border: 1rpx solid #1f2637;
+  border-radius: 8rpx;
+  background: #0d1322;
 }
 
 .eyebrow {
   display: block;
-  color: #93c5fd;
-  font-size: 24rpx;
+  color: #7ea8f0;
+  font-size: 22rpx;
 }
 
 .title {
   display: block;
-  margin-top: 8rpx;
-  font-size: 44rpx;
-  font-weight: 800;
-  letter-spacing: 0;
+  margin-top: 6rpx;
+  color: #e6eaf2;
+  font-size: 40rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
 }
 
 .top-actions {
@@ -214,30 +224,28 @@ onMounted(() => {
   gap: 12rpx;
 }
 
-.subscribe,
-.refresh {
-  width: 118rpx;
-  height: 60rpx;
+.ghost-btn {
+  width: 104rpx;
+  height: 56rpx;
   margin: 0;
-  border-radius: 8rpx;
-  color: #fff;
-  font-size: 24rpx;
-  line-height: 60rpx;
+  border: 1rpx solid #2a3449;
+  border-radius: 6rpx;
+  background: transparent;
+  color: #a7b0c2;
+  font-size: 22rpx;
+  line-height: 56rpx;
 }
 
-.subscribe {
-  background: #2563eb;
-}
-
-.refresh {
-  background: #f97316;
+.ghost-btn.accent {
+  border-color: #4f8ff7;
+  color: #4f8ff7;
 }
 
 .report {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 24rpx;
+  padding: 22rpx 24rpx;
 }
 
 .report-main {
@@ -246,137 +254,140 @@ onMounted(() => {
 
 .report-title {
   display: block;
-  max-width: 500rpx;
+  max-width: 520rpx;
   overflow: hidden;
-  color: #111827;
-  font-size: 30rpx;
-  font-weight: 700;
+  color: #e6eaf2;
+  font-size: 28rpx;
+  font-weight: 600;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .report-date {
   display: block;
-  margin-top: 8rpx;
-  color: #64748b;
-  font-size: 24rpx;
+  margin-top: 6rpx;
+  color: #5d6779;
+  font-size: 22rpx;
 }
 
 .report-action {
   flex-shrink: 0;
-  color: #2563eb;
-  font-size: 24rpx;
+  color: #4f8ff7;
+  font-size: 22rpx;
 }
 
 .grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 20rpx;
+  gap: 16rpx;
 }
 
 .product {
-  padding: 24rpx;
+  padding: 22rpx 24rpx;
 }
 
 .product-head {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
-  gap: 20rpx;
+  gap: 16rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #1f2637;
+}
+
+.product-id {
+  display: flex;
+  align-items: baseline;
+  gap: 14rpx;
 }
 
 .code {
-  display: block;
-  color: #111827;
-  font-size: 36rpx;
-  font-weight: 800;
+  color: #e6eaf2;
+  font-size: 34rpx;
+  font-weight: 700;
+  letter-spacing: 1rpx;
 }
 
 .name {
-  display: block;
-  margin-top: 4rpx;
-  color: #64748b;
-  font-size: 23rpx;
+  color: #5d6779;
+  font-size: 22rpx;
 }
 
 .contract {
-  display: block;
-  margin-top: 6rpx;
-  color: #2563eb;
-  font-size: 22rpx;
-  font-weight: 700;
-}
-
-.advice {
-  min-width: 128rpx;
-  padding: 10rpx 14rpx;
-  border-radius: 8rpx;
-  background: #ecfdf5;
-  color: #047857;
-  font-size: 24rpx;
-  text-align: center;
+  color: #7ea8f0;
+  font-size: 21rpx;
+  font-variant-numeric: tabular-nums;
 }
 
 .price-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 18rpx;
-  margin-top: 28rpx;
+  margin-top: 20rpx;
 }
 
 .label {
   display: block;
-  color: #64748b;
-  font-size: 22rpx;
+  color: #5d6779;
+  font-size: 21rpx;
 }
 
 .value {
   display: block;
-  margin-top: 8rpx;
-  color: #111827;
-  font-size: 34rpx;
+  margin-top: 6rpx;
+  color: #e6eaf2;
+  font-size: 36rpx;
   font-weight: 700;
 }
 
 .change {
   display: block;
-  margin-top: 4rpx;
-  color: #64748b;
+  margin-top: 2rpx;
+  color: #7d879c;
   font-size: 22rpx;
 }
 
-.basis-row {
+.meta-row {
   display: flex;
   flex-wrap: wrap;
   gap: 12rpx;
-  margin-top: 24rpx;
-  color: #475569;
-  font-size: 22rpx;
+  margin-top: 20rpx;
 }
 
-.basis-row text {
-  padding: 8rpx 12rpx;
-  border-radius: 8rpx;
-  background: #f1f5f9;
+.chip {
+  padding: 6rpx 14rpx;
+  border: 1rpx solid #232b3d;
+  border-radius: 4rpx;
+  background: #1a2130;
+  color: #a7b0c2;
+  font-size: 21rpx;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary {
-  padding: 24rpx;
+  padding: 22rpx 24rpx;
 }
 
 .section-title {
   display: block;
-  color: #111827;
-  font-size: 30rpx;
-  font-weight: 700;
+  color: #e6eaf2;
+  font-size: 28rpx;
+  font-weight: 600;
 }
 
 .summary-text {
   display: block;
-  margin-top: 16rpx;
-  color: #334155;
-  font-size: 26rpx;
-  line-height: 1.65;
+  margin-top: 14rpx;
+  color: #c3cad9;
+  font-size: 25rpx;
+  line-height: 1.7;
   white-space: pre-wrap;
+}
+
+.disclaimer {
+  padding: 8rpx 0 16rpx;
+  color: #5d6779;
+  font-size: 20rpx;
+  text-align: center;
 }
 </style>

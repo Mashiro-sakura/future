@@ -116,7 +116,7 @@ onShow(loadAdvice)
 
 .eyebrow {
   display: block;
-  color: #93c5fd;
+  color: #7ea8f0;
   font-size: 22rpx;
   font-weight: 700;
 }
@@ -146,14 +146,14 @@ onShow(loadAdvice)
 }
 
 .advice-card.active {
-  border: 2rpx solid #2563eb;
+  border: 2rpx solid #4f8ff7;
   background: #eff6ff;
 }
 
 .basis-title,
 .section-title {
   display: block;
-  color: #111827;
+  color: #e6eaf2;
   font-size: 30rpx;
   font-weight: 800;
 }
@@ -168,8 +168,8 @@ onShow(loadAdvice)
 .basis-tags text {
   padding: 8rpx 6rpx;
   border-radius: 8rpx;
-  background: #f1f5f9;
-  color: #475569;
+  background: #1a2130;
+  color: #a7b0c2;
   font-size: 21rpx;
   text-align: center;
 }
@@ -183,7 +183,7 @@ onShow(loadAdvice)
 
 .product {
   display: block;
-  color: #111827;
+  color: #e6eaf2;
   font-size: 36rpx;
   font-weight: 800;
 }
@@ -191,7 +191,7 @@ onShow(loadAdvice)
 .confidence {
   display: block;
   margin-top: 6rpx;
-  color: #64748b;
+  color: #7d879c;
   font-size: 22rpx;
 }
 
@@ -199,8 +199,8 @@ onShow(loadAdvice)
   flex-shrink: 0;
   padding: 10rpx 14rpx;
   border-radius: 8rpx;
-  background: #ecfdf5;
-  color: #047857;
+  background: #123125;
+  color: #0dbf7e;
   font-size: 24rpx;
   font-weight: 700;
 }
@@ -210,7 +210,7 @@ onShow(loadAdvice)
 .section-text {
   display: block;
   margin-top: 16rpx;
-  color: #334155;
+  color: #c3cad9;
   font-size: 26rpx;
   line-height: 1.6;
   white-space: pre-wrap;
@@ -218,7 +218,7 @@ onShow(loadAdvice)
 
 .analysis-section {
   padding: 18rpx 0;
-  border-top: 1rpx solid #e5e7eb;
+  border-top: 1rpx solid #1f2637;
 }
 
 .analysis-section:first-of-type {
@@ -234,13 +234,13 @@ onShow(loadAdvice)
 }
 
 .risk {
-  color: #b45309;
+  color: #d9a53f;
 }
 
 .analysis-conclusion {
   display: block;
   margin-top: 16rpx;
-  color: #dc2626;
+  color: #f0455c;
   font-size: 28rpx;
   font-weight: 900;
   line-height: 1.6;
@@ -252,7 +252,7 @@ onShow(loadAdvice)
   height: 58rpx;
   margin: 18rpx 0 0;
   border-radius: 8rpx;
-  background: #2563eb;
+  background: #4f8ff7;
   color: #fff;
   font-size: 24rpx;
   line-height: 58rpx;

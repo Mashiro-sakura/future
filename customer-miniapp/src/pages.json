@@ -4,7 +4,7 @@
       "path": "pages/index/index",
       "style": {
         "navigationBarTitleText": "期现分析",
-        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarBackgroundColor": "#0b0e17",
         "navigationBarTextStyle": "white"
       }
     },
@@ -12,7 +12,7 @@
       "path": "pages/product/detail",
       "style": {
         "navigationBarTitleText": "品种详情",
-        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarBackgroundColor": "#0b0e17",
         "navigationBarTextStyle": "white"
       }
     },
@@ -20,15 +20,7 @@
       "path": "pages/report/list",
       "style": {
         "navigationBarTitleText": "分析日报",
-        "navigationBarBackgroundColor": "#0f172a",
-        "navigationBarTextStyle": "white"
-      }
-    },
-    {
-      "path": "pages/advice/index",
-      "style": {
-        "navigationBarTitleText": "采购建议",
-        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarBackgroundColor": "#0b0e17",
         "navigationBarTextStyle": "white"
       }
     },
@@ -36,7 +28,7 @@
       "path": "pages/report/detail",
       "style": {
         "navigationBarTitleText": "分析日报",
-        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarBackgroundColor": "#0b0e17",
         "navigationBarTextStyle": "white"
       }
     },
@@ -44,7 +36,7 @@
       "path": "pages/basis/index",
       "style": {
         "navigationBarTitleText": "基差结构",
-        "navigationBarBackgroundColor": "#0f172a",
+        "navigationBarBackgroundColor": "#0b0e17",
         "navigationBarTextStyle": "white"
       }
     }
@@ -52,13 +44,13 @@
   "globalStyle": {
     "navigationBarTextStyle": "white",
     "navigationBarTitleText": "期现分析",
-    "navigationBarBackgroundColor": "#0f172a",
-    "backgroundColor": "#f6f7fb"
+    "navigationBarBackgroundColor": "#0b0e17",
+    "backgroundColor": "#0b0e17"
   },
   "tabBar": {
-    "color": "#64748b",
-    "selectedColor": "#2563eb",
-    "backgroundColor": "#ffffff",
+    "color": "#5d6779",
+    "selectedColor": "#4f8ff7",
+    "backgroundColor": "#0d1322",
     "borderStyle": "black",
     "list": [
       {
@@ -72,10 +64,6 @@
       {
         "pagePath": "pages/report/list",
         "text": "日报"
-      },
-      {
-        "pagePath": "pages/advice/index",
-        "text": "建议"
       }
     ]
   }

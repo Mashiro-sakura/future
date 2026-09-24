@@ -113,7 +113,7 @@ onLoad(async (query) => {
 
 .session {
   display: block;
-  color: #93c5fd;
+  color: #7ea8f0;
   font-size: 24rpx;
 }
 
@@ -132,7 +132,7 @@ onLoad(async (query) => {
 .block-title {
   display: block;
   margin-bottom: 18rpx;
-  color: #111827;
+  color: #e6eaf2;
   font-size: 30rpx;
   font-weight: 800;
 }
@@ -147,20 +147,20 @@ onLoad(async (query) => {
 .product-tabs text {
   padding: 8rpx 12rpx;
   border-radius: 8rpx;
-  background: #f1f5f9;
-  color: #475569;
+  background: #1a2130;
+  color: #a7b0c2;
   font-size: 22rpx;
   font-weight: 700;
 }
 
 .product-tabs text.active {
-  background: #2563eb;
+  background: #4f8ff7;
   color: #fff;
 }
 
 .analysis-section {
   padding: 18rpx 0;
-  border-top: 1rpx solid #e5e7eb;
+  border-top: 1rpx solid #1f2637;
 }
 
 .analysis-section:first-of-type {
@@ -176,7 +176,7 @@ onLoad(async (query) => {
 
 .advice-row {
   padding: 20rpx 0;
-  border-top: 1rpx solid #e5e7eb;
+  border-top: 1rpx solid #1f2637;
 }
 
 .advice-row.active {
@@ -197,7 +197,7 @@ onLoad(async (query) => {
 }
 
 .product {
-  color: #111827;
+  color: #e6eaf2;
   font-size: 32rpx;
   font-weight: 800;
 }
@@ -213,7 +213,7 @@ onLoad(async (query) => {
 .basis {
   display: block;
   margin-top: 14rpx;
-  color: #334155;
+  color: #c3cad9;
   font-size: 26rpx;
   line-height: 1.55;
 }
@@ -221,7 +221,7 @@ onLoad(async (query) => {
 .risk {
   display: block;
   margin-top: 8rpx;
-  color: #b45309;
+  color: #d9a53f;
   font-size: 24rpx;
   line-height: 1.5;
 }
@@ -231,7 +231,7 @@ onLoad(async (query) => {
   align-items: center;
   gap: 14rpx;
   margin-top: 16rpx;
-  color: #64748b;
+  color: #7d879c;
   font-size: 22rpx;
 }
 
@@ -240,7 +240,7 @@ onLoad(async (query) => {
   height: 12rpx;
   overflow: hidden;
   border-radius: 8rpx;
-  background: #e5e7eb;
+  background: #1f2637;
 }
 
 .bar-fill {
@@ -251,7 +251,7 @@ onLoad(async (query) => {
 
 .summary {
   display: block;
-  color: #334155;
+  color: #c3cad9;
   font-size: 26rpx;
   line-height: 1.65;
   white-space: pre-wrap;
@@ -260,7 +260,7 @@ onLoad(async (query) => {
 .analysis-conclusion {
   display: block;
   margin-top: 10rpx;
-  color: #dc2626;
+  color: #f0455c;
   font-size: 28rpx;
   font-weight: 900;
   line-height: 1.6;

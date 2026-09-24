@@ -9,8 +9,8 @@ export default {
 <style>
 page {
   min-height: 100%;
-  background: #f6f7fb;
-  color: #182033;
+  background: #0b0e17;
+  color: #e6eaf2;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
@@ -25,21 +25,21 @@ text {
 }
 
 .panel {
-  border: 1rpx solid #e5e7eb;
-  border-radius: 12rpx;
-  background: #ffffff;
+  border: 1rpx solid #1f2637;
+  border-radius: 8rpx;
+  background: #131826;
 }
 
 .muted {
-  color: #64748b;
+  color: #7d879c;
 }
 
 .positive {
-  color: #c2410c;
+  color: #f0455c;
 }
 
 .negative {
-  color: #0f766e;
+  color: #0dbf7e;
 }
 </style>
 
