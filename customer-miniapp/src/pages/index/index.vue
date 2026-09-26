@@ -102,6 +102,16 @@
         </view>
         <text class="pctile-note">密集成交区 {{ fmtInt(profile.val) }}-{{ fmtInt(profile.vah) }}（70% 价值区），橙色=放量分钟成交（占比 {{ profile.big_volume_pct }}%）</text>
       </view>
+      <view class="pctile" v-if="rankSnap && rankSnap.net_long !== null && rankSnap.net_long !== undefined">
+        <view class="pctile-head">
+          <text>主力持仓（前20会员）</text>
+          <text class="p-zone">{{ rankSnap.net_long >= 0 ? '净多' : '净空' }} {{ lots(Math.abs(rankSnap.net_long)) }}万手 · 分位 {{ rankSnap.net_percentile }}%</text>
+        </view>
+        <view class="rank-track">
+          <view class="rank-long" :style="{ width: Math.min(Math.max(rankSnap.long_pct || 50, 0), 100) + '%' }" />
+        </view>
+        <text class="pctile-note">多头 {{ lots(rankSnap.long_top20) }}万手（{{ signedLots(rankSnap.long_chg_top20) }}）· 空头 {{ lots(rankSnap.short_top20) }}万手（{{ signedLots(rankSnap.short_chg_top20) }}），净{{ rankSnap.net_long >= 0 ? '多' : '空' }}较上日 {{ signedLots(rankSnap.net_chg) }}万手（近{{ rankSnap.sample_days }}日样本，红=多绿=空）</text>
+      </view>
     </view>
 
     <!-- 品种表 -->
@@ -157,7 +167,8 @@ import {
   getRealtime,
   getTrend,
   getVolatility,
-  getVolumeProfile
+  getVolumeProfile,
+  getPositionRank
 } from '../../utils/api'
 
 const overview = reactive({ latest_report: null, products: [] })
@@ -166,6 +177,15 @@ const quoteNote = ref('已收盘 · 显示最近交易日收盘数据')
 const snapshot = ref(null)
 const volSnap = ref(null)
 const profile = ref(null)
+const rankSnap = ref(null)
+function lots(v) {
+  return Number.isFinite(Number(v)) ? (Number(v) / 10000).toFixed(1) : '-'
+}
+function signedLots(v) {
+  if (!Number.isFinite(Number(v))) return '-'
+  const w = Number(v) / 10000
+  return (w > 0 ? '+' : '') + w.toFixed(1)
+}
 const profileTopBins = computed(() => {
   const bins = profile.value?.bins
   if (!Array.isArray(bins)) return []
@@ -297,17 +317,22 @@ async function selectProduct(code) {
   snapshot.value = null
   volSnap.value = null
   profile.value = null
+  rankSnap.value = null
   state.trendLast = null
   try {
-    const [detail, trend, vol, prof] = await Promise.all([getBasisDetail(code), getTrend(code, 5), getVolatility(code), getVolumeProfile(code)])
+    const [detail, trend, vol, prof, rank] = await Promise.all([
+      getBasisDetail(code), getTrend(code, 5), getVolatility(code), getVolumeProfile(code), getPositionRank(code)
+    ])
     snapshot.value = detail?.snapshot || null
     volSnap.value = vol || null
     profile.value = prof || null
+    rankSnap.value = rank || null
     state.trendLast = Array.isArray(trend) && trend.length ? trend[trend.length - 1] : null
   } catch (error) {
     snapshot.value = null
     volSnap.value = null
     profile.value = null
+    rankSnap.value = null
   }
 }
 
@@ -737,6 +762,21 @@ onUnload(() => {
   text-align: right;
   color: #a7b0c2;
   font-size: 18rpx;
+}
+
+/* 主力持仓多空条 */
+.rank-track {
+  margin-top: 12rpx;
+  height: 14rpx;
+  border-radius: 7rpx;
+  background: rgba(13, 191, 126, 0.45);
+  overflow: hidden;
+}
+
+.rank-long {
+  height: 100%;
+  border-radius: 7rpx 0 0 7rpx;
+  background: rgba(240, 69, 92, 0.75);
 }
 
 /* 品种表 */

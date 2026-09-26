@@ -162,6 +162,18 @@
         font-size: 10px;
         line-height: 1.5;
       }
+      .rank-track {
+        margin-top: 6px;
+        height: 8px;
+        border-radius: 4px;
+        background: rgba(13, 191, 126, 0.45);
+        overflow: hidden;
+      }
+      .rank-long {
+        height: 100%;
+        border-radius: 4px 0 0 4px;
+        background: rgba(240, 69, 92, 0.75);
+      }
       .hero-price-row {
         display: flex;
         align-items: flex-end;
@@ -346,7 +358,7 @@
         text-align: center;
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-COEe0pln.js"></script>
+    <script type="module" crossorigin src="/assets/index-DV_no7Bp.js"></script>
   </head>
   <body>
     <div class="app">
@@ -413,6 +425,14 @@
             </div>
             <div class="pctile-track"><div class="pctile-marker" id="volMarker"></div></div>
             <div class="pctile-note" id="volNote"></div>
+          </div>
+          <div class="pctile" id="rankBox" style="display:none">
+            <div class="pctile-head">
+              <span>主力持仓（前20会员）</span>
+              <span class="p-zone" id="rankZone">-</span>
+            </div>
+            <div class="rank-track"><div class="rank-long" id="rankLongBar"></div></div>
+            <div class="pctile-note" id="rankNote"></div>
           </div>
         </section>
 

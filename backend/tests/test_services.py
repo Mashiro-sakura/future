@@ -289,3 +289,97 @@ def test_volume_profile_endpoint(client: TestClient, monkeypatch) -> None:
     vp._profile_cache.clear()
     vp._profile_cache["PTA"] = (999999999999, data)  # 远未来时间戳=缓存有效
     assert client.get("/api/public/volume-profile/PTA").status_code == 200
+
+
+# ── 主力持仓排名（龙虎榜，大资金方向）────────────────────
+from app.services.position_rank import position_rank_snapshot
+import app.database as database
+from app.models import PositionRankDaily
+
+
+def _seed_rank_rows(n: int = 30, net_start: float = 50000.0) -> None:
+    db = database.SessionLocal()
+    base = date(2026, 8, 3)
+    for i in range(n):
+        net = net_start + i * 1000
+        db.add(PositionRankDaily(
+            product_code="PTA", trade_date=base + timedelta(days=i),
+            long_top20=1000000 + net / 2, long_chg_top20=1000.0,
+            short_top20=1000000 - net / 2, short_chg_top20=-500.0,
+            net_long=net, source="test",
+        ))
+    db.commit()
+    db.close()
+
+
+def test_position_rank_snapshot(client: TestClient) -> None:
+    _seed_rank_rows(30)
+    snap = position_rank_snapshot(database.SessionLocal(), "PTA")
+    assert snap is not None
+    assert snap["net_long"] == 50000 + 29 * 1000
+    assert snap["net_chg"] == 1000 - (-500)  # 多增 - 空减
+    assert snap["net_percentile"] == 100.0  # 递增序列最新即最高
+    assert snap["zone"] == "高位区"
+    assert snap["long_pct"] > 50
+    assert snap["sample_days"] == 30
+
+
+def test_position_rank_snapshot_no_config() -> None:
+    assert position_rank_snapshot(database.SessionLocal(), "PVC") is None
+
+
+def test_position_rank_endpoint(client: TestClient) -> None:
+    _seed_rank_rows(5)
+    response = client.get("/api/public/position-rank/PTA")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["code"] == "PTA"
+    assert data["net_long"] is not None
+    assert client.get("/api/public/position-rank/PVC").status_code == 404
+
+
+# ── 主力持仓排名（龙虎榜，大资金方向）────────────────────
+from app.services.position_rank import position_rank_snapshot
+import app.database as database
+from app.models import PositionRankDaily
+
+
+def _seed_rank_rows(n: int = 30, net_start: float = 50000.0) -> None:
+    db = database.SessionLocal()
+    base = date(2026, 8, 3)
+    for i in range(n):
+        net = net_start + i * 1000
+        db.add(PositionRankDaily(
+            product_code="PTA", trade_date=base + timedelta(days=i),
+            long_top20=1000000 + net / 2, long_chg_top20=1000.0,
+            short_top20=1000000 - net / 2, short_chg_top20=-500.0,
+            net_long=net, source="test",
+        ))
+    db.commit()
+    db.close()
+
+
+def test_position_rank_snapshot(client: TestClient) -> None:
+    _seed_rank_rows(30)
+    snap = position_rank_snapshot(database.SessionLocal(), "PTA")
+    assert snap is not None
+    assert snap["net_long"] == 50000 + 29 * 1000
+    assert snap["net_chg"] == 1000 - (-500)  # 多增 - 空减
+    assert snap["net_percentile"] == 100.0  # 递增序列最新即最高
+    assert snap["zone"] == "高位区"
+    assert snap["long_pct"] > 50
+    assert snap["sample_days"] == 30
+
+
+def test_position_rank_snapshot_no_config() -> None:
+    assert position_rank_snapshot(database.SessionLocal(), "PVC") is None
+
+
+def test_position_rank_endpoint(client: TestClient) -> None:
+    _seed_rank_rows(5)
+    response = client.get("/api/public/position-rank/PTA")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["code"] == "PTA"
+    assert data["net_long"] is not None
+    assert client.get("/api/public/position-rank/PVC").status_code == 404

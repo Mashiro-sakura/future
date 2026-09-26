@@ -208,6 +208,28 @@ class VolatilityDaily(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
+class PositionRankDaily(Base):
+    """交易所前20会员持仓排名（日频官方数据）——大资金方向，结构描述。
+
+    V1: PTA/郑商所（get_rank_sum_daily 品种汇总行）。DCE 通路断臂同波动率。
+    """
+
+    __tablename__ = "position_rank_daily"
+    __table_args__ = (UniqueConstraint("product_code", "trade_date", name="uq_position_rank_product_date"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    product_code: Mapped[str] = mapped_column(String(16), ForeignKey("products.code"), index=True)
+    trade_date: Mapped[date] = mapped_column(Date, index=True)
+    long_top20: Mapped[float] = mapped_column(Float)
+    long_chg_top20: Mapped[float | None] = mapped_column(Float)
+    short_top20: Mapped[float] = mapped_column(Float)
+    short_chg_top20: Mapped[float | None] = mapped_column(Float)
+    net_long: Mapped[float] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(64), default="czce")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class AdminUser(Base):
     __tablename__ = "admin_users"
 

@@ -22,9 +22,11 @@ from app.schemas import (
     TrendPoint,
     VolatilityOut,
     VolumeProfileOut,
+    PositionRankOut,
 )
 from app.services.analytics import overview_products, trend_points
 from app.services.basis import BASIS_LOOKBACK_DAYS, basis_overview, basis_series, basis_snapshot
+from app.services.position_rank import position_rank_snapshot
 from app.services.volatility import volatility_snapshot
 from app.services.volume_profile import volume_profile_snapshot
 from app.services.reports import ensure_report_analysis, latest_public_report
@@ -195,6 +197,14 @@ def volume_profile_detail(code: str, db: Session = Depends(get_db)) -> dict[str,
     if payload is None:
         raise HTTPException(status_code=404, detail="该品种暂无成交分布数据")
     return payload
+
+
+@router.get("/position-rank/{code}", response_model=PositionRankOut)
+def position_rank_detail(code: str, db: Session = Depends(get_db)) -> dict[str, object]:
+    snapshot = position_rank_snapshot(db, code)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="该品种暂无持仓排名数据")
+    return snapshot
 
 
 @router.get("/reports/latest", response_model=ReportOut)

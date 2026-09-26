@@ -123,3 +123,13 @@ export async function getVolumeProfile(code) {
     return null
   }
 }
+
+export async function getPositionRank(code) {
+  // 主力持仓排名：无数据（404）或失败返回 null（面板自动隐藏，不用 mock）
+  try {
+    return await request(`/api/public/position-rank/${code}`)
+  } catch (error) {
+    console.warn('Position rank unavailable', error)
+    return null
+  }
+}

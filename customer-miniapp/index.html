@@ -162,6 +162,18 @@
         font-size: 10px;
         line-height: 1.5;
       }
+      .rank-track {
+        margin-top: 6px;
+        height: 8px;
+        border-radius: 4px;
+        background: rgba(13, 191, 126, 0.45);
+        overflow: hidden;
+      }
+      .rank-long {
+        height: 100%;
+        border-radius: 4px 0 0 4px;
+        background: rgba(240, 69, 92, 0.75);
+      }
       .hero-price-row {
         display: flex;
         align-items: flex-end;
@@ -412,6 +424,14 @@
             </div>
             <div class="pctile-track"><div class="pctile-marker" id="volMarker"></div></div>
             <div class="pctile-note" id="volNote"></div>
+          </div>
+          <div class="pctile" id="rankBox" style="display:none">
+            <div class="pctile-head">
+              <span>主力持仓（前20会员）</span>
+              <span class="p-zone" id="rankZone">-</span>
+            </div>
+            <div class="rank-track"><div class="rank-long" id="rankLongBar"></div></div>
+            <div class="pctile-note" id="rankNote"></div>
           </div>
         </section>
 
@@ -875,6 +895,7 @@
         renderPctile(code)
         renderVol(code)
         renderProfile(code)
+        renderRank(code)
         renderAnalysis()
       }
 
@@ -906,6 +927,31 @@
 
       function fmtPrice(v) {
         return Number.isFinite(Number(v)) ? String(Math.round(Number(v))) : '-'
+      }
+
+      /* ── 主力持仓（前20会员，大资金方向，日频官方）── */
+      function lots(v) {
+        return Number.isFinite(Number(v)) ? (Number(v) / 10000).toFixed(1) : '-'
+      }
+      function signedLots(v) {
+        if (!Number.isFinite(Number(v))) return '-'
+        const w = Number(v) / 10000
+        return (w > 0 ? '+' : '') + w.toFixed(1)
+      }
+      async function renderRank(code) {
+        const box = $('#rankBox')
+        const snap = await getJson(`/api/public/position-rank/${code}`, null)
+        if (!snap || snap.net_long === null || snap.net_long === undefined) {
+          box.style.display = 'none'
+          return
+        }
+        box.style.display = 'block'
+        const net = snap.net_long
+        $('#rankZone').textContent = `${net >= 0 ? '净多' : '净空'} ${lots(Math.abs(net))}万手 · 分位 ${snap.net_percentile}%`
+        $('#rankLongBar').style.width = `${Math.min(Math.max(snap.long_pct || 50, 0), 100)}%`
+        $('#rankNote').textContent =
+          `多头 ${lots(snap.long_top20)}万手（${signedLots(snap.long_chg_top20)}）· 空头 ${lots(snap.short_top20)}万手（${signedLots(snap.short_chg_top20)}）` +
+          `，净${net >= 0 ? '多' : '空'}较上日 ${signedLots(snap.net_chg)}万手（近${snap.sample_days}日样本，红=多绿=空）`
       }
 
       async function load() {

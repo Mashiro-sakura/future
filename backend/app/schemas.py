@@ -305,3 +305,22 @@ class VolumeProfileOut(BaseModel):
     max_bin_volume: float | None = None
     bins: list[VolumeProfileBin] = []
     server_time: str | None = None
+
+
+class PositionRankOut(BaseModel):
+    """前20会员持仓排名快照（日频官方，结构描述）。"""
+
+    code: str
+    trade_date: date | None = None
+    long_top20: float | None = None
+    long_chg_top20: float | None = None
+    short_top20: float | None = None
+    short_chg_top20: float | None = None
+    net_long: float | None = None
+    net_chg: float | None = None
+    long_pct: float | None = None
+    net_percentile: float | None = None
+    zone: str | None = None
+    sample_days: int = 0
+    window: int = 0
+    source: str | None = None
