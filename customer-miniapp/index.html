@@ -125,6 +125,32 @@
         color: var(--accent-dim);
         font-size: 11px;
       }
+      .live-tag {
+        margin-left: 6px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+      .live-tag.on {
+        background: rgba(240, 69, 92, 0.15);
+        color: var(--up);
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      .live-tag.off {
+        background: var(--panel-2);
+        color: var(--muted);
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
+      }
+      @keyframes flash {
+        0% { color: var(--accent); }
+        100% { color: var(--text); }
+      }
+      .hero-price.flash { animation: flash 0.7s ease-out; }
       .hero-price-row {
         display: flex;
         align-items: flex-end;
@@ -331,6 +357,7 @@
               <span class="hero-name" id="heroName">PTA</span>
             </div>
             <span class="hero-contract" id="heroContract">主力 TA0</span>
+            <span class="live-tag off" id="liveTag">已收盘</span>
           </div>
           <div class="hero-price-row">
             <span class="hero-price num" id="heroPrice">-</span>
@@ -428,7 +455,7 @@
         }))
       }
 
-      const state = { code: 'PTA', tab: 'price_behavior', overview: null, trend: [] }
+      const state = { code: 'PTA', tab: 'price_behavior', overview: null, trend: [], live: {}, liveOn: false }
 
       const $ = (sel) => document.querySelector(sel)
       const money = (v) => (v === null || v === undefined ? '-' : Number(v).toLocaleString())
@@ -442,6 +469,80 @@
         if (v === null || v === undefined) return '-'
         const n = Number(v)
         return Math.abs(n) >= 100000 ? `${(n / 10000).toLocaleString('zh-CN', { maximumFractionDigits: 1 })}万` : n.toLocaleString()
+      }
+
+      /* ── 盘中准实时（档1：10s 轮询，交易时段才启动） ── */
+      function isTradingNow() {
+        const now = new Date()
+        const day = now.getDay()
+        if (day === 0 || day === 6) return false
+        const hm = now.getHours() * 100 + now.getMinutes()
+        return (hm >= 900 && hm <= 1015) || (hm >= 1030 && hm <= 1130) || (hm >= 1330 && hm <= 1500) || (hm >= 2100 && hm <= 2330)
+      }
+
+      // 展示口径：有 live 用 live（price/change_pct 基准=昨收），否则回落库内日线
+      function displayQuote(item) {
+        const live = state.live[item.code]
+        if (live && live.price !== null && live.price !== undefined) {
+          return { price: live.price, chg: live.change_pct, isLive: true }
+        }
+        const price = item.futures_close ?? item.spot_price
+        const chg = item.futures_close != null ? item.futures_change_pct : item.spot_change_pct
+        return { price, chg, isLive: false }
+      }
+
+      let liveTimer = null
+      let liveWatch = null
+
+      function updateLiveTag() {
+        const tag = $('#liveTag')
+        if (state.liveOn) {
+          tag.textContent = 'LIVE'
+          tag.className = 'live-tag on'
+        } else {
+          tag.textContent = '已收盘'
+          tag.className = 'live-tag off'
+        }
+      }
+
+      async function pollRealtime() {
+        const quotes = await getJson('/api/public/realtime', null)
+        if (!Array.isArray(quotes)) return
+        const prev = { ...state.live }
+        state.live = Object.fromEntries(quotes.map((q) => [q.code, q]))
+        const products = state.overview?.products || []
+        renderTicker(products)
+        renderBoard(products)
+        const current = products.find((p) => p.code === state.code)
+        if (current) {
+          const before = prev[state.code]?.price
+          const after = state.live[state.code]?.price
+          renderHero(current)
+          if (before !== after && after !== null && after !== undefined) {
+            const el = $('#heroPrice')
+            el.classList.remove('flash')
+            void el.offsetWidth
+            el.classList.add('flash')
+          }
+        }
+      }
+
+      function startRealtimeLoop() {
+        const on = isTradingNow()
+        state.liveOn = on
+        updateLiveTag()
+        if (on && !liveTimer) {
+          pollRealtime()
+          liveTimer = setInterval(pollRealtime, 10000)
+        }
+        if (!on && liveTimer) {
+          clearInterval(liveTimer)
+          liveTimer = null
+        }
+        // 跨时段守候：每分钟重估一次（收盘停轮询、夜盘开盘自动恢复）
+        if (!liveWatch) {
+          liveWatch = setInterval(startRealtimeLoop, 60000)
+        }
       }
 
       async function getJson(path, fallbackValue) {
@@ -465,10 +566,9 @@
       function renderTicker(products) {
         $('#ticker').innerHTML = products
           .map((item) => {
-            const price = item.futures_close ?? item.spot_price
-            const chg = item.futures_close != null ? item.futures_change_pct : item.spot_change_pct
+            const q = displayQuote(item)
             return `<div class="tick ${item.code === state.code ? 'active' : ''}" data-code="${item.code}">
-              <span class="t-code">${item.code}</span><span class="t-price num">${money(price)}</span><span class="t-chg num ${tone(chg)}">${pct(chg)}</span>
+              <span class="t-code">${item.code}</span><span class="t-price num">${money(q.price)}</span><span class="t-chg num ${tone(q.chg)}">${pct(q.chg)}</span>
             </div>`
           })
           .join('')
@@ -481,13 +581,13 @@
       function renderBoard(products) {
         const rows = products
           .map((item) => {
-            const chg = item.futures_close != null ? item.futures_change_pct : item.spot_change_pct
+            const q = displayQuote(item)
             const basisZone =
               item.basis_value == null ? '' : item.basis_value > 10 ? '升水' : item.basis_value < -10 ? '贴水' : '平水'
             return `<div class="board-row ${item.code === state.code ? 'active' : ''}" data-code="${item.code}">
               <span class="b-code">${item.code}<span class="b-name">${item.name}</span></span>
-              <span class="b-price num">${money(item.futures_close ?? item.spot_price)}</span>
-              <span class="b-chg num ${tone(chg)}">${pct(chg)}</span>
+              <span class="b-price num">${money(q.price)}</span>
+              <span class="b-chg num ${tone(q.chg)}">${pct(q.chg)}</span>
               <span class="b-basis num">${item.basis_value == null ? '现货' : signed(item.basis_value)}<span class="b-zone">${basisZone}</span></span>
             </div>`
           })
@@ -501,15 +601,16 @@
       /* ── Hero ── */
       function renderHero(item) {
         if (!item) return
-        const hasFutures = item.futures_close != null
+        const q = displayQuote(item)
+        const hasFutures = item.futures_close != null || state.live[item.code]?.price != null
         $('#heroCode').textContent = item.code
         $('#heroName').textContent = item.name
-        $('#heroContract').textContent = hasFutures ? `主力 ${item.futures_contract || '-'}` : '现货品种'
-        $('#heroPrice').textContent = money(hasFutures ? item.futures_close : item.spot_price)
-        const chg = hasFutures ? item.futures_change_pct : item.spot_change_pct
+        const liveContract = state.live[item.code]?.contract_code
+        $('#heroContract').textContent = hasFutures ? `主力 ${liveContract || item.futures_contract || '-'}` : '现货品种'
+        $('#heroPrice').textContent = money(q.price)
         const chgEl = $('#heroChg')
-        chgEl.textContent = pct(chg)
-        chgEl.className = `hero-chg num ${tone(chg)}`
+        chgEl.textContent = pct(q.chg)
+        chgEl.className = `hero-chg num ${tone(q.chg)}`
         $('#statSpot').textContent = money(item.spot_price)
         const spotChgEl = $('#statSpotChg')
         spotChgEl.textContent = pct(item.spot_change_pct)
@@ -518,11 +619,12 @@
         $('#statBasisLabel').textContent =
           item.basis_value == null ? '无基差' : item.basis_value > 10 ? '现货升水' : item.basis_value < -10 ? '现货贴水' : '平水'
         const last = state.trend[state.trend.length - 1] || {}
-        $('#statOi').textContent = wan(last.open_interest)
+        const live = state.live[item.code]
+        $('#statOi').textContent = wan(live?.open_interest ?? last.open_interest)
         const oiChgEl = $('#statOiChg')
         oiChgEl.textContent = pct(item.open_interest_change_pct)
         oiChgEl.className = `s-sub num ${tone(item.open_interest_change_pct)}`
-        $('#statVol').textContent = wan(last.volume)
+        $('#statVol').textContent = wan(live?.volume ?? last.volume)
       }
 
       /* ── 基差分位 ── */
@@ -708,10 +810,13 @@
         $('#reportTitle').textContent = data.latest_report?.title || '暂无日报'
         $('#summaryText').textContent = data.latest_report?.market_summary || '-'
         await selectProduct(state.code)
+        startRealtimeLoop()
       }
 
       $('#refreshBtn').addEventListener('click', load)
       window.addEventListener('resize', () => drawTrend(state.trend.slice(-30)))
+      // 调试句柄：验收脚本/控制台排障用（只读引用，不暴露写接口）
+      window.__terminal = { state, renderHero, renderTicker, renderBoard, updateLiveTag, pollRealtime }
       load()
     </script>
   </body>

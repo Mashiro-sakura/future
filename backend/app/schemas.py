@@ -239,3 +239,18 @@ class BasisOverviewItem(BaseModel):
 class BasisDetailOut(BaseModel):
     snapshot: BasisOverviewItem
     history: list[BasisPoint]
+
+
+class RealtimeQuoteOut(BaseModel):
+    """盘中准实时快照（透传不写库）。涨跌基准=库内最近一个交易日收盘价。"""
+
+    code: str
+    contract_code: str | None = None
+    price: float | None = None
+    prev_close: float | None = None
+    change_pct: float | None = None
+    volume: float | None = None
+    open_interest: float | None = None
+    trade_date: date | None = None
+    trading_now: bool
+    server_time: datetime

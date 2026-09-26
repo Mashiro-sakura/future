@@ -17,6 +17,7 @@ from app.schemas import (
     MiniappSubscriptionOut,
     OverviewOut,
     ProductOut,
+    RealtimeQuoteOut,
     ReportOut,
     TrendPoint,
 )
@@ -83,6 +84,62 @@ def create_miniapp_subscription(payload: MiniappSubscriptionIn, db: Session = De
 def overview(db: Session = Depends(get_db)) -> OverviewOut:
     report = latest_public_report(db)
     return OverviewOut(latest_report=report, products=overview_products(db, report))
+
+
+def _is_trading_time(now: datetime) -> bool:
+    """粗粒度交易时段：工作日 09:00-10:15 / 10:30-11:30 / 13:30-15:00 / 21:00-23:30。
+
+    档1 不追求交易所级精确（节假日前夜夜盘暂停、部分品种 01:00/02:30 收盘等不展开），
+    前端据此决定是否启动轮询，宁可在边界时刻多显示一会"已收盘"。
+    """
+    if now.weekday() >= 5:
+        return False
+    hm = now.hour * 100 + now.minute
+    return (900 <= hm <= 1015) or (1030 <= hm <= 1130) or (1330 <= hm <= 1500) or (2100 <= hm <= 2330)
+
+
+@router.get("/realtime", response_model=list[RealtimeQuoteOut])
+def realtime_quotes(db: Session = Depends(get_db)) -> list[RealtimeQuoteOut]:
+    """盘中准实时快照：新浪透传（60s 缓存，不写库），涨跌基准=库内最近收盘价。"""
+    from app.models import FuturesPrice
+    from app.services.data_fetcher import fetch_realtime_main_quotes
+
+    products = db.query(Product).filter(Product.is_active.is_(True)).order_by(Product.display_order).all()
+    quotes = fetch_realtime_main_quotes(products)
+    trading = _is_trading_time(datetime.now())
+    now = datetime.now()
+    out: list[RealtimeQuoteOut] = []
+    for product in products:
+        row = quotes.get(product.code)
+        prev_close: float | None = None
+        if row is not None:
+            prev = (
+                db.query(FuturesPrice)
+                .filter(FuturesPrice.product_code == product.code, FuturesPrice.trade_date < row.trade_date)
+                .order_by(desc(FuturesPrice.trade_date))
+                .first()
+            )
+            prev_close = prev.close_price if prev else None
+        change_pct = (
+            round((row.close_price - prev_close) / prev_close * 100, 2)
+            if row is not None and prev_close not in (None, 0)
+            else None
+        )
+        out.append(
+            RealtimeQuoteOut(
+                code=product.code,
+                contract_code=row.contract_code if row else None,
+                price=row.close_price if row else None,
+                prev_close=prev_close,
+                change_pct=change_pct,
+                volume=row.volume if row else None,
+                open_interest=row.open_interest if row else None,
+                trade_date=row.trade_date if row else None,
+                trading_now=trading,
+                server_time=now,
+            )
+        )
+    return out
 
 
 @router.get("/products", response_model=list[ProductOut])

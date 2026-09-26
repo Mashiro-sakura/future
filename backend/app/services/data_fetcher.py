@@ -409,6 +409,41 @@ def _fetch_daily_rows_from_main_sina(product: Product, days: int) -> list[Future
     return _rows_from_records(df.to_dict("records"), product, symbol, days, "akshare:sina-main-contract")
 
 
+_realtime_cache: dict[str, object] = {"ts": 0.0, "data": None}
+REALTIME_CACHE_TTL_SECONDS = 60
+
+
+def fetch_realtime_main_quotes(products: list[Product], ttl: int = REALTIME_CACHE_TTL_SECONDS) -> dict[str, FuturesRow]:
+    """盘中准实时：新浪快照透传（不写库），模块级 60s 缓存防打爆上游。
+
+    每品种一次批量请求查全部候选合约，按持仓/成交量挑主力。
+    上游失败时回退旧缓存（stale 总比白屏强），全无可返回空 dict。
+    """
+    import time
+
+    now = time.time()
+    cached = _realtime_cache.get("data")
+    if cached is not None and now - float(_realtime_cache["ts"]) < ttl:
+        return cached  # type: ignore[return-value]
+    quotes: dict[str, FuturesRow] = {}
+    for product in products:
+        if not _has_futures(product):
+            continue
+        try:
+            rows = _fetch_realtime_rows_from_sina_symbols(_contract_candidate_codes(_contract_prefix(product)))
+            if not rows:
+                continue
+            rows.sort(key=lambda item: ((item[1].open_interest or 0), (item[1].volume or 0)), reverse=True)
+            quotes[product.code] = rows[0][1]
+        except Exception:
+            continue
+    if quotes:
+        _realtime_cache["ts"] = now
+        _realtime_cache["data"] = quotes
+        return quotes
+    return cached or {}  # type: ignore[return-value]
+
+
 def _fallback_futures(product: Product, days: int = 60) -> list[FuturesRow]:
     if not _has_futures(product):
         return []

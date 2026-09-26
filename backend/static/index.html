@@ -125,6 +125,32 @@
         color: var(--accent-dim);
         font-size: 11px;
       }
+      .live-tag {
+        margin-left: 6px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-size: 9px;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+      .live-tag.on {
+        background: rgba(240, 69, 92, 0.15);
+        color: var(--up);
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      .live-tag.off {
+        background: var(--panel-2);
+        color: var(--muted);
+      }
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.45; }
+      }
+      @keyframes flash {
+        0% { color: var(--accent); }
+        100% { color: var(--text); }
+      }
+      .hero-price.flash { animation: flash 0.7s ease-out; }
       .hero-price-row {
         display: flex;
         align-items: flex-end;
@@ -309,7 +335,7 @@
         text-align: center;
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-CrcWpJBc.js"></script>
+    <script type="module" crossorigin src="/assets/index-DwTf-d-8.js"></script>
   </head>
   <body>
     <div class="app">
@@ -332,6 +358,7 @@
               <span class="hero-name" id="heroName">PTA</span>
             </div>
             <span class="hero-contract" id="heroContract">主力 TA0</span>
+            <span class="live-tag off" id="liveTag">已收盘</span>
           </div>
           <div class="hero-price-row">
             <span class="hero-price num" id="heroPrice">-</span>
