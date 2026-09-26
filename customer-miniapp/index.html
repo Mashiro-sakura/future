@@ -6,287 +6,402 @@
     <title>期现分析</title>
     <style>
       :root {
-        color: #e6eaf2;
-        background: #0b0e17;
+        --bg: #0a0d15;
+        --panel: #111627;
+        --panel-2: #161c30;
+        --line: #1f2637;
+        --line-soft: #1a2133;
+        --text: #e6eaf2;
+        --text-2: #a7b0c2;
+        --muted: #5d6779;
+        --accent: #4f8ff7;
+        --accent-dim: #7ea8f0;
+        --up: #f0455c;
+        --down: #0dbf7e;
+        --warn: #d9a53f;
+        color: var(--text);
+        background: var(--bg);
         font-family:
           -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        background: #0b0e17;
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); }
+      .num { font-variant-numeric: tabular-nums; }
 
       .app {
         width: min(100%, 430px);
         min-height: 100vh;
         margin: 0 auto;
-        background: #0b0e17;
+        background: var(--bg);
+        border-left: 1px solid var(--line-soft);
+        border-right: 1px solid var(--line-soft);
       }
 
-      .num {
-        font-variant-numeric: tabular-nums;
-      }
-
-      .top {
+      /* ── 顶栏 ─────────────────────── */
+      .topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 18px 20px;
-        border-bottom: 1px solid #1f2637;
-        background: #0d1322;
-        color: #e6eaf2;
+        height: 52px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--line);
+        background: #0d1220;
       }
-
-      .eyebrow {
-        margin: 0 0 5px;
-        color: #7ea8f0;
-        font-size: 12px;
+      .topbar .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
       }
-
-      h1 {
+      .topbar h1 {
         margin: 0;
-        font-size: 24px;
+        font-size: 16px;
         font-weight: 700;
-        letter-spacing: 1px;
+        letter-spacing: 2px;
       }
-
+      .topbar .session {
+        color: var(--accent-dim);
+        font-size: 11px;
+      }
       .refresh {
-        width: 60px;
-        height: 32px;
-        border: 1px solid #4f8ff7;
-        border-radius: 5px;
+        height: 28px;
+        padding: 0 12px;
+        border: 1px solid var(--accent);
+        border-radius: 4px;
         background: transparent;
-        color: #4f8ff7;
-        font-size: 12px;
+        color: var(--accent);
+        font-size: 11px;
         font-weight: 700;
+        cursor: pointer;
       }
 
-      main {
-        display: grid;
-        gap: 12px;
-        padding: 12px;
+      /* ── Ticker 条 ─────────────────── */
+      .ticker {
+        display: flex;
+        gap: 0;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+        scrollbar-width: none;
       }
+      .ticker::-webkit-scrollbar { display: none; }
+      .tick {
+        flex: 0 0 auto;
+        padding: 8px 14px;
+        border-right: 1px solid var(--line-soft);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .tick.active { background: var(--panel-2); box-shadow: 0 -2px 0 var(--accent) inset; }
+      .tick .t-code { color: var(--text-2); font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+      .tick .t-price { margin-left: 6px; color: var(--text); font-size: 12px; font-weight: 600; }
+      .tick .t-chg { margin-left: 6px; font-size: 11px; }
+      .up { color: var(--up); }
+      .down { color: var(--down); }
+      .flat { color: var(--muted); }
+
+      main { display: grid; gap: 10px; padding: 10px; }
 
       .panel {
-        border: 1px solid #1f2637;
+        border: 1px solid var(--line);
         border-radius: 6px;
-        background: #131826;
+        background: var(--panel);
       }
 
-      .report {
+      /* ── Hero ─────────────────────── */
+      .hero { padding: 16px 16px 14px; }
+      .hero-head {
         display: flex;
-        align-items: center;
+        align-items: baseline;
         justify-content: space-between;
-        gap: 14px;
-        padding: 14px 16px;
       }
-
-      .report h2 {
-        margin: 0;
+      .hero-id { display: flex; align-items: baseline; gap: 10px; }
+      .hero-code { font-size: 22px; font-weight: 800; letter-spacing: 1.5px; }
+      .hero-name { color: var(--muted); font-size: 12px; }
+      .hero-contract {
+        padding: 2px 8px;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        color: var(--accent-dim);
+        font-size: 11px;
+      }
+      .hero-price-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        margin-top: 10px;
+      }
+      .hero-price {
+        font-size: 44px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: 0.5px;
+      }
+      .hero-chg {
+        margin-bottom: 5px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .hero-chg.up { background: rgba(240, 69, 92, 0.14); }
+      .hero-chg.down { background: rgba(13, 191, 126, 0.12); }
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        margin-top: 16px;
+        border: 1px solid var(--line-soft);
+        border-radius: 5px;
         overflow: hidden;
-        color: #e6eaf2;
-        font-size: 16px;
-        font-weight: 600;
+        background: var(--line-soft);
+      }
+      .stat {
+        padding: 9px 10px;
+        background: var(--panel-2);
+      }
+      .stat .s-label { display: block; color: var(--muted); font-size: 10px; }
+      .stat .s-value { display: block; margin-top: 4px; color: var(--text); font-size: 14px; font-weight: 700; }
+      .stat .s-sub { display: block; margin-top: 2px; font-size: 10px; }
+
+      /* ── 基差分位条 ─────────────────── */
+      .pctile { margin-top: 14px; }
+      .pctile-head {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .pctile-head .p-zone { font-weight: 700; }
+      .pctile-track {
+        position: relative;
+        height: 6px;
+        margin-top: 6px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #14362b 0%, #1a2130 35%, #1a2130 65%, #3a2030 100%);
+      }
+      .pctile-marker {
+        position: absolute;
+        top: -3px;
+        width: 2px;
+        height: 12px;
+        border-radius: 1px;
+        background: var(--accent);
+        box-shadow: 0 0 6px rgba(79, 143, 247, 0.8);
+      }
+      .pctile-note { margin-top: 6px; color: var(--muted); font-size: 10px; }
+
+      /* ── 图表 ─────────────────────── */
+      .chart-panel { padding: 12px 10px 8px; }
+      .chart-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 0 6px 8px;
+      }
+      .chart-title { color: var(--text-2); font-size: 12px; font-weight: 700; }
+      .legend { display: flex; gap: 12px; color: var(--muted); font-size: 10px; }
+      .legend i {
+        display: inline-block;
+        width: 8px;
+        height: 2px;
+        margin-right: 4px;
+        vertical-align: middle;
+      }
+      canvas { display: block; width: 100%; height: 220px; }
+
+      /* ── 品种表 ────────────────────── */
+      .board { overflow: hidden; }
+      .board-row {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr 0.85fr 1.05fr;
+        align-items: center;
+        padding: 10px 12px;
+        border-top: 1px solid var(--line-soft);
+        cursor: pointer;
+      }
+      .board-row.head {
+        padding: 8px 12px;
+        border-top: 0;
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 1px;
+      }
+      .board-row:not(.head):hover { background: var(--panel-2); }
+      .board-row.active { background: var(--panel-2); box-shadow: 2px 0 0 var(--accent) inset; }
+      .board-row > span {
+        min-width: 0;
+        overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      .b-code { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+      .b-name { display: block; color: var(--muted); font-size: 9px; font-weight: 400; letter-spacing: 0; }
+      .b-price, .b-chg, .b-basis { font-size: 12px; font-weight: 600; text-align: right; }
+      .b-basis .b-zone { display: block; font-size: 9px; font-weight: 400; color: var(--muted); }
 
-      .report p {
-        margin: 5px 0 0;
-        color: #5d6779;
-        font-size: 12px;
-      }
-
-      .link {
-        flex: 0 0 auto;
-        color: #4f8ff7;
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      .product-list {
-        display: grid;
-        gap: 10px;
-      }
-
-      .product {
-        padding: 14px 16px;
-      }
-
-      .product.active {
-        border-color: #4f8ff7;
-        box-shadow: 0 0 0 1px #4f8ff7 inset;
-      }
-
-      .product-head,
-      .price-row {
+      /* ── 四维分析 ───────────────────── */
+      .analysis { padding: 14px; }
+      .section-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; }
+      .tabs {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
+        gap: 2px;
+        border-bottom: 1px solid var(--line);
       }
-
-      .code {
-        display: inline-block;
-        margin: 0;
-        color: #e6eaf2;
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: 1px;
-      }
-
-      .name {
-        margin: 2px 0 0;
-        color: #5d6779;
+      .tab {
+        padding: 7px 12px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: var(--muted);
         font-size: 12px;
+        cursor: pointer;
       }
-
-      .main-contract {
-        color: #7ea8f0;
-        font-weight: 400;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .price-row {
-        margin-top: 14px;
-      }
-
-      .label {
-        display: block;
-        color: #5d6779;
-        font-size: 11px;
-      }
-
-      .value {
-        display: block;
-        margin-top: 4px;
-        color: #e6eaf2;
-        font-size: 20px;
-        font-weight: 700;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .change {
-        display: block;
-        margin-top: 2px;
-        color: #7d879c;
+      .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+      .tab-body {
+        min-height: 110px;
+        padding: 12px 2px 4px;
+        color: var(--text-2);
         font-size: 12px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .positive {
-        color: #f0455c;
-      }
-
-      .negative {
-        color: #0dbf7e;
-      }
-
-      .basis-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
-      }
-
-      .basis-row span {
-        padding: 4px 9px;
-        border: 1px solid #232b3d;
-        border-radius: 4px;
-        background: #1a2130;
-        color: #a7b0c2;
-        font-size: 11px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .chart-panel,
-      .summary,
-      .analysis {
-        padding: 14px 16px;
-      }
-
-      .section-title {
-        margin: 0 0 10px;
-        color: #e6eaf2;
-        font-size: 15px;
-        font-weight: 600;
-      }
-
-      canvas {
-        width: 100%;
-        height: 210px;
-      }
-
-      .summary-text {
-        margin: 0;
-        color: #c3cad9;
-        font-size: 13px;
-        line-height: 1.7;
+        line-height: 1.75;
         white-space: pre-wrap;
       }
-
-      .analysis-grid {
-        display: grid;
-        gap: 10px;
+      .conclusion {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-left: 3px solid var(--accent);
+        border-radius: 0 4px 4px 0;
+        background: var(--panel-2);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.6;
       }
 
-      .analysis-item {
-        padding: 12px;
-        border: 1px solid #1f2637;
-        border-radius: 5px;
-        background: #161d2c;
+      /* ── 摘要/页脚 ───────────────────── */
+      .summary { padding: 14px; }
+      .summary-text {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 12px;
+        line-height: 1.8;
+        white-space: pre-wrap;
       }
-
-      .analysis-item h3 {
-        margin: 0 0 7px;
-        color: #4f8ff7;
-        font-size: 13px;
+      .report-entry {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 14px;
       }
-
-      .conclusion-text {
-        color: #f0455c;
-        font-weight: 700;
+      .report-entry .r-title {
+        overflow: hidden;
+        color: var(--text-2);
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
-
+      .report-entry .r-link { flex: 0 0 auto; color: var(--accent); font-size: 11px; font-weight: 700; }
       .disclaimer {
         margin: 0;
-        padding: 4px 0 14px;
-        color: #5d6779;
-        font-size: 11px;
+        padding: 2px 0 14px;
+        color: var(--muted);
+        font-size: 10px;
         text-align: center;
       }
     </style>
   </head>
   <body>
     <div class="app">
-      <header class="top">
-        <div>
-          <p class="eyebrow" id="sessionText">日报</p>
+      <header class="topbar">
+        <div class="brand">
           <h1>期现分析</h1>
+          <span class="session" id="sessionText">日报</span>
         </div>
         <button class="refresh" id="refreshBtn">刷新</button>
       </header>
+
+      <nav class="ticker" id="ticker"></nav>
+
       <main>
-        <section class="report panel" id="reportCard"></section>
-        <section class="product-list" id="productList"></section>
-        <section class="chart-panel panel">
-          <h2 class="section-title" id="chartTitle">PTA 期现价格</h2>
-          <canvas id="trendChart" width="760" height="420"></canvas>
+        <!-- Hero：选中品种 -->
+        <section class="panel hero">
+          <div class="hero-head">
+            <div class="hero-id">
+              <span class="hero-code" id="heroCode">PTA</span>
+              <span class="hero-name" id="heroName">PTA</span>
+            </div>
+            <span class="hero-contract" id="heroContract">主力 TA0</span>
+          </div>
+          <div class="hero-price-row">
+            <span class="hero-price num" id="heroPrice">-</span>
+            <span class="hero-chg num flat" id="heroChg">-</span>
+          </div>
+          <div class="stat-grid">
+            <div class="stat">
+              <span class="s-label">现货</span>
+              <span class="s-value num" id="statSpot">-</span>
+              <span class="s-sub num" id="statSpotChg">-</span>
+            </div>
+            <div class="stat">
+              <span class="s-label">基差</span>
+              <span class="s-value num" id="statBasis">-</span>
+              <span class="s-sub" id="statBasisLabel">-</span>
+            </div>
+            <div class="stat">
+              <span class="s-label">持仓量</span>
+              <span class="s-value num" id="statOi">-</span>
+              <span class="s-sub num" id="statOiChg">-</span>
+            </div>
+            <div class="stat">
+              <span class="s-label">成交量</span>
+              <span class="s-value num" id="statVol">-</span>
+              <span class="s-sub">手</span>
+            </div>
+          </div>
+          <div class="pctile" id="pctileBox" style="display:none">
+            <div class="pctile-head">
+              <span>基差分位（近一年）</span>
+              <span class="p-zone" id="pctileZone">-</span>
+            </div>
+            <div class="pctile-track"><div class="pctile-marker" id="pctileMarker"></div></div>
+            <div class="pctile-note" id="pctileNote"></div>
+          </div>
         </section>
-        <section class="analysis panel">
-          <h2 class="section-title">四维分析</h2>
-          <div class="analysis-grid" id="analysisGrid"></div>
+
+        <!-- 图表 -->
+        <section class="panel chart-panel">
+          <div class="chart-head">
+            <span class="chart-title" id="chartTitle">PTA 期现价格 · 近30交易日</span>
+            <span class="legend">
+              <span><i style="background:#4f8ff7"></i>期货</span>
+              <span><i style="background:#f97316"></i>现货</span>
+            </span>
+          </div>
+          <canvas id="trendChart"></canvas>
         </section>
-        <section class="summary panel">
+
+        <!-- 品种表 -->
+        <section class="panel board" id="board"></section>
+
+        <!-- 四维分析 -->
+        <section class="panel analysis">
+          <h2 class="section-title">四维分析 · <span id="analysisCode">PTA</span></h2>
+          <div class="tabs" id="tabs"></div>
+          <div class="tab-body" id="tabBody">加载中…</div>
+          <div class="conclusion" id="conclusion" style="display:none"></div>
+        </section>
+
+        <!-- 日报入口 + 摘要 -->
+        <section class="panel report-entry">
+          <span class="r-title" id="reportTitle">暂无日报</span>
+          <span class="r-link">已发布</span>
+        </section>
+        <section class="panel summary">
           <h2 class="section-title">行情摘要</h2>
-          <p class="summary-text" id="summaryText"></p>
+          <p class="summary-text" id="summaryText">-</p>
         </section>
-        <p class="disclaimer">结构描述，非买卖指令</p>
+
+        <p class="disclaimer">结构描述，非买卖指令 · 数据来源：交易所行情/公开现货基准</p>
       </main>
     </div>
 
@@ -295,86 +410,38 @@
       const fallback = {
         latest_report: {
           id: 1,
-          report_date: '2026-07-09',
+          report_date: '2026-09-24',
           session_name: 'evening',
-          title: '2026-07-09 PTA/PVC/塑料期现晚报',
-          market_summary:
-            'PTA：主力合约TA2609，期货5862，现货5910，基差48。\nPVC：主力合约V2609，期货5620，现货5580，基差-40。\nLLDPE：主力合约L2609，期货8190，现货8250，基差60。\nPP：主力合约PP2609，期货7442，现货7380，基差-62。\nOCT：现货8200，纯现货跟踪，无期货基差。',
-          price_behavior_analysis:
-            'PTA主力合约TA2609：期货+0.74%，现货+0.35%，持仓+1.42%，盘面资金偏强。\nPVC主力合约V2609：现货弱于盘面，短线仍需观察承接。',
-          fundamentals_analysis:
-            'PTA聚酯刚需仍在；PVC地产链需求恢复偏慢；LLDPE库存平稳；PP现货贴水扩大。',
-          macro_analysis: '原油、煤化工成本和人民币汇率仍是塑化链条主要外部变量，当前宏观信号未形成单边共振。',
-          policy_analysis:
-            '关注能耗、安全生产、环保检查、地产链支持政策，以及交易所保证金和限仓调整。'
+          title: '2026-09-24 多品种期现晚报',
+          market_summary: 'PTA：主力合约TA0，期货6340，现货7147.5，基差807.5（现货升水）。'
         },
         products: [
-          ['PTA', 'PTA', 5862, 5910, 48, 0.74, 0.35, 1.42],
-          ['PVC', 'PVC', 5620, 5580, -40, -0.52, -0.83, 0.66],
-          ['LLDPE', '线型低密度聚乙烯', 8190, 8250, 60, 0.18, 0.12, -0.41],
-          ['PP', '聚丙烯', 7442, 7380, -62, -0.34, -1.08, 2.2],
+          ['PTA', 'PTA', 6340, 7147.5, 807.5, 3.59, 2.85, 1.28],
+          ['PVC', 'PVC', 4798, 4665, -133, 0.59, -0.21, -1.02],
+          ['LLDPE', '线型低密度聚乙烯', 8235, 9191.67, 956.67, 0.42, 0.31, 0.66],
+          ['PP', '聚丙烯', 8631, 9883.33, 1252.33, 1.02, 0.52, 2.2],
           ['OCT', '辛醇', null, 8200, null, null, 0.12, null]
-        ].map(
-          ([
-            code,
-            name,
-            futures_close,
-            spot_price,
-            basis_value,
-            futures_change_pct,
-            spot_change_pct,
-            open_interest_change_pct
-          ]) => ({
-            code,
-            name,
-            futures_contract: { PTA: 'TA2609', PVC: 'V2609', LLDPE: 'L2609', PP: 'PP2609', OCT: null }[code],
-            futures_close,
-            spot_price,
-            basis_value,
-            futures_change_pct,
-            spot_change_pct,
-            open_interest_change_pct
-          })
-        )
+        ].map(([code, name, futures_close, spot_price, basis_value, futures_change_pct, spot_change_pct, open_interest_change_pct]) => ({
+          code, name,
+          futures_contract: { PTA: 'TA0', PVC: 'V0', LLDPE: 'L0', PP: 'PP0', OCT: null }[code],
+          futures_close, spot_price, basis_value, futures_change_pct, spot_change_pct, open_interest_change_pct
+        }))
       }
 
-      let selectedCode = 'PTA'
+      const state = { code: 'PTA', tab: 'price_behavior', overview: null, trend: [] }
 
-      function money(value) {
-        return value === null || value === undefined ? '-' : Number(value).toLocaleString()
+      const $ = (sel) => document.querySelector(sel)
+      const money = (v) => (v === null || v === undefined ? '-' : Number(v).toLocaleString())
+      const pct = (v) => {
+        if (v === null || v === undefined) return '-'
+        return `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(2)}%`
       }
-
-      function pct(value) {
-        if (value === null || value === undefined) return '-'
-        return `${Number(value) > 0 ? '+' : ''}${Number(value).toFixed(2)}%`
-      }
-
-      function signed(value) {
-        if (value === null || value === undefined) return '-'
-        return Number(value) > 0 ? `+${value}` : String(value)
-      }
-
-      function tone(value) {
-        if (Number(value) > 0) return 'positive'
-        if (Number(value) < 0) return 'negative'
-        return ''
-      }
-
-      function mockTrend(code) {
-        const product = fallback.products.find((item) => item.code === code) || fallback.products[0]
-        const hasFutures = product.futures_close !== null && product.futures_close !== undefined
-        return Array.from({ length: 30 }, (_, index) => {
-          const baseFuture = hasFutures ? product.futures_close : product.spot_price || 7000
-          const baseSpot = product.spot_price
-          const wave = Math.sin(index / 4) * baseFuture * 0.01
-          const drift = (index - 15) * baseFuture * 0.00035
-          return {
-            trade_date: `2026-06-${String(10 + index).padStart(2, '0')}`,
-            futures_contract: product.futures_contract,
-            futures_close: hasFutures ? Math.round(baseFuture + wave + drift) : null,
-            spot_price: Math.round(baseSpot + Math.cos(index / 5) * baseSpot * 0.008 + drift * 0.6)
-          }
-        })
+      const signed = (v) => (v === null || v === undefined ? '-' : Number(v) > 0 ? `+${v}` : String(v))
+      const tone = (v) => (Number(v) > 0 ? 'up' : Number(v) < 0 ? 'down' : 'flat')
+      const wan = (v) => {
+        if (v === null || v === undefined) return '-'
+        const n = Number(v)
+        return Math.abs(n) >= 100000 ? `${(n / 10000).toLocaleString('zh-CN', { maximumFractionDigits: 1 })}万` : n.toLocaleString()
       }
 
       async function getJson(path, fallbackValue) {
@@ -387,162 +454,264 @@
         }
       }
 
-      function getProductAnalysis(report = {}, code, products = []) {
-        const analyses = Array.isArray(report.product_analyses) ? report.product_analyses : []
-        const matched = analyses.find((item) => item.product_code === code)
-        if (matched) return matched
+      const TABS = [
+        ['price_behavior', '价格行为'],
+        ['fundamentals', '基本面'],
+        ['macro', '宏观面'],
+        ['policy', '政策面']
+      ]
 
-        const product = products.find((item) => item.code === code) || {}
-        const spotOnly = !product.futures_contract
-        return {
-          product_code: code,
-          price_behavior: spotOnly
-            ? `${code}（${product.name || '现货品种'}）为现货品种，暂不做期货盘面分析。价格行为以华东现货${money(product.spot_price)}、区域报价、库存、开工率和产业链成本传导为主。`
-            : `${code}主力合约${product.futures_contract || '-'}，期货${money(product.futures_close)}，现货${money(product.spot_price)}，基差${signed(product.basis_value)}，持仓变化${pct(product.open_interest_change_pct)}。`,
-          fundamentals: `${code}区域现货：华东${money(product.spot_price)}。开工率、社会库存与工厂库存详见日报；库存周期需持续跟踪。`,
-          macro: `${code}宏观面重点跟踪美元兑人民币、中国经济、美国经济、原油和产业链传导。`,
-          policy: `${code}每日政策/产业消息：安全生产、环保检查、装置检修动态，详见日报政策栏。`,
-          conclusion: `结论：以上为 ${code} 期现结构描述，非买卖指令。`
-        }
-      }
-
-      function renderAnalysis(report, code, products) {
-        const analysis = getProductAnalysis(report, code, products)
-        const title = document.querySelector('#analysisTitle') || document.querySelector('.analysis .section-title')
-        title.textContent = `${analysis.product_code || code} 四维分析`
-        const sections = [
-          ['价格行为', analysis.price_behavior, false],
-          ['基本面', analysis.fundamentals, false],
-          ['宏观面', analysis.macro, false],
-          ['政策面', analysis.policy, false],
-          ['结论', analysis.conclusion, true]
-        ]
-        document.querySelector('#analysisGrid').innerHTML = sections
-          .map(
-            ([title, content, conclusion]) => `
-              <article class="analysis-item">
-                <h3>${title}</h3>
-                <p class="summary-text ${conclusion ? 'conclusion-text' : ''}">${content || '-'}</p>
-              </article>
-            `
-          )
-          .join('')
-      }
-
-      function renderOverview(data) {
-        document.querySelector('#sessionText').textContent =
-          data.latest_report?.session_name === 'morning' ? '早报' : '晚报'
-        document.querySelector('#reportCard').innerHTML = `
-          <div>
-            <h2>${data.latest_report?.title || '暂无日报'}</h2>
-            <p>${data.latest_report?.report_date || ''}</p>
-          </div>
-          <span class="link">已发布</span>
-        `
-        document.querySelector('#productList').innerHTML = data.products
-          .map(
-            (item) => `
-              <article class="product panel ${selectedCode === item.code ? 'active' : ''}" data-code="${item.code}" data-name="${item.name}">
-                <div class="product-head">
-                  <div>
-                    <p class="code">${item.code}</p>
-                    <p class="name">${item.name}</p>
-                  </div>
-                  <span class="name main-contract">${item.futures_contract ? `主力 ${item.futures_contract}` : '现货品种'}</span>
-                </div>
-                <div class="price-row">
-                  <div>
-                    <span class="label">${item.futures_contract ? '期货' : '期货不适用'}</span>
-                    <span class="value">${money(item.futures_close)}</span>
-                    <span class="change ${tone(item.futures_change_pct)}">${pct(item.futures_change_pct)}</span>
-                  </div>
-                  <div>
-                    <span class="label">现货</span>
-                    <span class="value">${money(item.spot_price)}</span>
-                    <span class="change ${tone(item.spot_change_pct)}">${pct(item.spot_change_pct)}</span>
-                  </div>
-                </div>
-                <div class="basis-row">
-                  <span>${item.futures_contract ? `基差 ${signed(item.basis_value)}` : '无期货基差'}</span>
-                  <span>${item.futures_contract ? `持仓 ${pct(item.open_interest_change_pct)}` : '现货跟踪'}</span>
-                </div>
-              </article>
-            `
-          )
-          .join('')
-        renderAnalysis(data.latest_report || {}, selectedCode, data.products || [])
-        document.querySelector('#summaryText').textContent = data.latest_report?.market_summary || '-'
-        document.querySelectorAll('.product').forEach((card) => {
-          card.addEventListener('click', () => {
-            selectedCode = card.dataset.code
-            document
-              .querySelectorAll('.product')
-              .forEach((item) => item.classList.toggle('active', item.dataset.code === selectedCode))
-            renderAnalysis(data.latest_report || {}, selectedCode, data.products || [])
-            loadTrend(selectedCode, card.dataset.name)
+      /* ── Ticker ── */
+      function renderTicker(products) {
+        $('#ticker').innerHTML = products
+          .map((item) => {
+            const price = item.futures_close ?? item.spot_price
+            const chg = item.futures_close != null ? item.futures_change_pct : item.spot_change_pct
+            return `<div class="tick ${item.code === state.code ? 'active' : ''}" data-code="${item.code}">
+              <span class="t-code">${item.code}</span><span class="t-price num">${money(price)}</span><span class="t-chg num ${tone(chg)}">${pct(chg)}</span>
+            </div>`
           })
+          .join('')
+        document.querySelectorAll('.tick').forEach((el) => {
+          el.addEventListener('click', () => selectProduct(el.dataset.code))
         })
       }
 
+      /* ── 品种表 ── */
+      function renderBoard(products) {
+        const rows = products
+          .map((item) => {
+            const chg = item.futures_close != null ? item.futures_change_pct : item.spot_change_pct
+            const basisZone =
+              item.basis_value == null ? '' : item.basis_value > 10 ? '升水' : item.basis_value < -10 ? '贴水' : '平水'
+            return `<div class="board-row ${item.code === state.code ? 'active' : ''}" data-code="${item.code}">
+              <span class="b-code">${item.code}<span class="b-name">${item.name}</span></span>
+              <span class="b-price num">${money(item.futures_close ?? item.spot_price)}</span>
+              <span class="b-chg num ${tone(chg)}">${pct(chg)}</span>
+              <span class="b-basis num">${item.basis_value == null ? '现货' : signed(item.basis_value)}<span class="b-zone">${basisZone}</span></span>
+            </div>`
+          })
+          .join('')
+        $('#board').innerHTML = `<div class="board-row head"><span>品种</span><span style="text-align:right">最新价</span><span style="text-align:right">涨跌</span><span style="text-align:right">基差</span></div>${rows}`
+        document.querySelectorAll('.board-row:not(.head)').forEach((el) => {
+          el.addEventListener('click', () => selectProduct(el.dataset.code))
+        })
+      }
+
+      /* ── Hero ── */
+      function renderHero(item) {
+        if (!item) return
+        const hasFutures = item.futures_close != null
+        $('#heroCode').textContent = item.code
+        $('#heroName').textContent = item.name
+        $('#heroContract').textContent = hasFutures ? `主力 ${item.futures_contract || '-'}` : '现货品种'
+        $('#heroPrice').textContent = money(hasFutures ? item.futures_close : item.spot_price)
+        const chg = hasFutures ? item.futures_change_pct : item.spot_change_pct
+        const chgEl = $('#heroChg')
+        chgEl.textContent = pct(chg)
+        chgEl.className = `hero-chg num ${tone(chg)}`
+        $('#statSpot').textContent = money(item.spot_price)
+        const spotChgEl = $('#statSpotChg')
+        spotChgEl.textContent = pct(item.spot_change_pct)
+        spotChgEl.className = `s-sub num ${tone(item.spot_change_pct)}`
+        $('#statBasis').textContent = item.basis_value == null ? '-' : signed(item.basis_value)
+        $('#statBasisLabel').textContent =
+          item.basis_value == null ? '无基差' : item.basis_value > 10 ? '现货升水' : item.basis_value < -10 ? '现货贴水' : '平水'
+        const last = state.trend[state.trend.length - 1] || {}
+        $('#statOi').textContent = wan(last.open_interest)
+        const oiChgEl = $('#statOiChg')
+        oiChgEl.textContent = pct(item.open_interest_change_pct)
+        oiChgEl.className = `s-sub num ${tone(item.open_interest_change_pct)}`
+        $('#statVol').textContent = wan(last.volume)
+      }
+
+      /* ── 基差分位 ── */
+      async function renderPctile(code) {
+        const box = $('#pctileBox')
+        const data = await getJson(`/api/public/basis/${code}`, null)
+        const snap = data?.snapshot
+        if (!snap || snap.percentile === null || snap.percentile === undefined) {
+          box.style.display = 'none'
+          return
+        }
+        box.style.display = 'block'
+        $('#pctileZone').textContent = `${snap.zone || '-'} · ${snap.percentile}%`
+        $('#pctileMarker').style.left = `calc(${Math.min(Math.max(snap.percentile, 0), 100)}% - 1px)`
+        $('#pctileNote').textContent =
+          `当前基差 ${signed(snap.basis_value)}（${snap.basis_label}），高于近一年 ${snap.percentile}% 的交易日` +
+          `（样本 ${snap.sample_days} 天${snap.data_stale ? '，数据停更' : ''}）`
+      }
+
+      /* ── 四维分析 ── */
+      function renderAnalysis() {
+        const report = state.overview?.latest_report || {}
+        const analyses = Array.isArray(report.product_analyses) ? report.product_analyses : []
+        const item = analyses.find((a) => a.product_code === state.code) || {}
+        $('#analysisCode').textContent = state.code
+        $('#tabs').innerHTML = TABS.map(
+          ([key, label]) => `<button class="tab ${state.tab === key ? 'active' : ''}" data-tab="${key}">${label}</button>`
+        ).join('')
+        document.querySelectorAll('.tab').forEach((el) => {
+          el.addEventListener('click', () => {
+            state.tab = el.dataset.tab
+            renderAnalysis()
+          })
+        })
+        $('#tabBody').textContent = item[state.tab] || '本期报告未覆盖该维度'
+        const conclusionEl = $('#conclusion')
+        if (item.conclusion) {
+          conclusionEl.style.display = 'block'
+          conclusionEl.textContent = item.conclusion
+        } else {
+          conclusionEl.style.display = 'none'
+        }
+      }
+
+      /* ── 图表 ── */
       function drawTrend(points) {
-        const canvas = document.querySelector('#trendChart')
+        const canvas = $('#trendChart')
+        const dpr = window.devicePixelRatio || 1
+        const cssW = canvas.clientWidth
+        const cssH = canvas.clientHeight
+        canvas.width = cssW * dpr
+        canvas.height = cssH * dpr
         const ctx = canvas.getContext('2d')
-        const width = canvas.width
-        const height = canvas.height
-        const area = { x: 56, y: 34, w: width - 86, h: height - 78 }
-        ctx.clearRect(0, 0, width, height)
-        ctx.fillStyle = '#131826'
-        ctx.fillRect(0, 0, width, height)
+        ctx.scale(dpr, dpr)
+        const W = cssW
+        const H = cssH
+        const area = { x: 8, y: 12, w: W - 58, h: H - 34 }
+
+        ctx.clearRect(0, 0, W, H)
+        ctx.fillStyle = '#111627'
+        ctx.fillRect(0, 0, W, H)
+
+        const series = [
+          { key: 'futures_close', color: '#4f8ff7', fill: true },
+          { key: 'spot_price', color: '#f97316', fill: false }
+        ]
+        const allValues = points.flatMap((p) => [p.futures_close, p.spot_price]).filter((v) => Number.isFinite(Number(v))).map(Number)
+        if (!points.length || !allValues.length) {
+          ctx.fillStyle = '#5d6779'
+          ctx.font = '12px sans-serif'
+          ctx.fillText('暂无趋势数据', W / 2 - 36, H / 2)
+          return
+        }
+        let min = Math.min(...allValues)
+        let max = Math.max(...allValues)
+        const pad = (max - min) * 0.08 || max * 0.01 || 1
+        min -= pad
+        max += pad
+
+        // 网格 + Y 轴价格标签
         ctx.strokeStyle = '#1f2637'
-        ctx.lineWidth = 2
+        ctx.fillStyle = '#5d6779'
+        ctx.lineWidth = 1
+        ctx.font = '10px sans-serif'
         for (let i = 0; i <= 4; i += 1) {
           const y = area.y + (area.h / 4) * i
           ctx.beginPath()
           ctx.moveTo(area.x, y)
           ctx.lineTo(area.x + area.w, y)
           ctx.stroke()
+          const value = max - ((max - min) / 4) * i
+          ctx.fillText(value >= 10000 ? (value / 1000).toFixed(1) + 'k' : String(Math.round(value)), area.x + area.w + 6, y + 3)
         }
-        drawLine(points, 'futures_close', '#4f8ff7', area, ctx)
-        drawLine(points, 'spot_price', '#f97316', area, ctx)
-        ctx.fillStyle = '#7d879c'
-        ctx.font = '22px sans-serif'
-        ctx.fillText(points[0]?.trade_date?.slice(5) || '', area.x, height - 20)
-        ctx.fillText(points.at(-1)?.trade_date?.slice(5) || '', width - 104, height - 20)
+
+        const xAt = (i) => area.x + (i / Math.max(points.length - 1, 1)) * area.w
+        const yAt = (v) => area.y + area.h - ((Number(v) - min) / (max - min)) * area.h
+
+        for (const s of series) {
+          const vals = points.map((p) => Number(p[s.key])).filter(Number.isFinite)
+          if (vals.length < 2) continue
+          if (s.fill) {
+            const gradient = ctx.createLinearGradient(0, area.y, 0, area.y + area.h)
+            gradient.addColorStop(0, 'rgba(79,143,247,0.28)')
+            gradient.addColorStop(1, 'rgba(79,143,247,0)')
+            ctx.beginPath()
+            points.forEach((p, i) => {
+              const x = xAt(i)
+              const y = yAt(p[s.key])
+              if (i === 0) ctx.moveTo(x, y)
+              else ctx.lineTo(x, y)
+            })
+            ctx.lineTo(xAt(points.length - 1), area.y + area.h)
+            ctx.lineTo(xAt(0), area.y + area.h)
+            ctx.closePath()
+            ctx.fillStyle = gradient
+            ctx.fill()
+          }
+          ctx.beginPath()
+          points.forEach((p, i) => {
+            const x = xAt(i)
+            const y = yAt(p[s.key])
+            if (i === 0) ctx.moveTo(x, y)
+            else ctx.lineTo(x, y)
+          })
+          ctx.strokeStyle = s.color
+          ctx.lineWidth = s.fill ? 2 : 1.5
+          ctx.stroke()
+
+          // 末点标记 + 最新价虚线
+          const lastIdx = points.length - 1
+          const lastY = yAt(points[lastIdx][s.key])
+          ctx.beginPath()
+          ctx.arc(xAt(lastIdx), lastY, 3, 0, Math.PI * 2)
+          ctx.fillStyle = s.color
+          ctx.fill()
+          ctx.setLineDash([3, 3])
+          ctx.beginPath()
+          ctx.moveTo(area.x, lastY)
+          ctx.lineTo(area.x + area.w, lastY)
+          ctx.strokeStyle = s.color + '55'
+          ctx.lineWidth = 1
+          ctx.stroke()
+          ctx.setLineDash([])
+        }
+
+        // 日期标签
+        ctx.fillStyle = '#5d6779'
+        ctx.font = '10px sans-serif'
+        ctx.fillText(String(points[0]?.trade_date || '').slice(5), area.x, H - 8)
+        const lastDate = String(points[points.length - 1]?.trade_date || '').slice(5)
+        ctx.fillText(lastDate, area.x + area.w - ctx.measureText(lastDate).width, H - 8)
       }
 
-      function drawLine(points, key, color, area, ctx) {
-        const values = points.map((item) => Number(item[key])).filter(Number.isFinite)
-        if (values.length < 2) return
-        const min = Math.min(...values)
-        const max = Math.max(...values)
-        ctx.strokeStyle = color
-        ctx.lineWidth = 5
-        ctx.beginPath()
-        points.forEach((item, index) => {
-          const x = area.x + (index / Math.max(points.length - 1, 1)) * area.w
-          const y = area.y + area.h - ((Number(item[key]) - min) / Math.max(max - min, 1)) * area.h
-          if (index === 0) ctx.moveTo(x, y)
-          else ctx.lineTo(x, y)
-        })
-        ctx.stroke()
+      /* ── 数据流 ── */
+      async function selectProduct(code) {
+        state.code = code
+        const products = state.overview?.products || []
+        renderTicker(products)
+        renderBoard(products)
+        await loadTrend()
+        renderHero(products.find((p) => p.code === code))
+        renderPctile(code)
+        renderAnalysis()
       }
 
-      async function loadTrend(code, name) {
-        document.querySelector('#chartTitle').textContent = code === 'OCT' ? `${code} 现货价格趋势` : `${code} 主力合约期现价格`
-        const trend = await getJson(`/api/public/products/${code}/trend?days=60`, mockTrend(code))
+      async function loadTrend() {
+        $('#chartTitle').textContent = `${state.code} 期现价格 · 近30交易日`
+        const trend = await getJson(`/api/public/products/${state.code}/trend?days=60`, [])
+        state.trend = trend
         drawTrend(trend.slice(-30))
       }
 
       async function load() {
         const data = await getJson('/api/public/overview', fallback)
-        if (!data.products?.some((item) => item.code === selectedCode)) {
-          selectedCode = data.products?.[0]?.code || 'PTA'
+        state.overview = data
+        if (!data.products?.some((item) => item.code === state.code)) {
+          state.code = data.products?.[0]?.code || 'PTA'
         }
-        renderOverview(data)
-        await loadTrend(selectedCode)
+        $('#sessionText').textContent =
+          (data.latest_report?.session_name === 'morning' ? '早报' : '晚报') +
+          ' · ' +
+          String(data.latest_report?.report_date || '').slice(5)
+        $('#reportTitle').textContent = data.latest_report?.title || '暂无日报'
+        $('#summaryText').textContent = data.latest_report?.market_summary || '-'
+        await selectProduct(state.code)
       }
 
-      document.querySelector('#refreshBtn').addEventListener('click', load)
+      $('#refreshBtn').addEventListener('click', load)
+      window.addEventListener('resize', () => drawTrend(state.trend.slice(-30)))
       load()
     </script>
   </body>

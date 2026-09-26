@@ -6,288 +6,403 @@
     <title>期现分析</title>
     <style>
       :root {
-        color: #e6eaf2;
-        background: #0b0e17;
+        --bg: #0a0d15;
+        --panel: #111627;
+        --panel-2: #161c30;
+        --line: #1f2637;
+        --line-soft: #1a2133;
+        --text: #e6eaf2;
+        --text-2: #a7b0c2;
+        --muted: #5d6779;
+        --accent: #4f8ff7;
+        --accent-dim: #7ea8f0;
+        --up: #f0455c;
+        --down: #0dbf7e;
+        --warn: #d9a53f;
+        color: var(--text);
+        background: var(--bg);
         font-family:
           -apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", sans-serif;
       }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      body {
-        margin: 0;
-        background: #0b0e17;
-      }
+      * { box-sizing: border-box; }
+      body { margin: 0; background: var(--bg); }
+      .num { font-variant-numeric: tabular-nums; }
 
       .app {
         width: min(100%, 430px);
         min-height: 100vh;
         margin: 0 auto;
-        background: #0b0e17;
+        background: var(--bg);
+        border-left: 1px solid var(--line-soft);
+        border-right: 1px solid var(--line-soft);
       }
 
-      .num {
-        font-variant-numeric: tabular-nums;
-      }
-
-      .top {
+      /* ── 顶栏 ─────────────────────── */
+      .topbar {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 18px 20px;
-        border-bottom: 1px solid #1f2637;
-        background: #0d1322;
-        color: #e6eaf2;
+        height: 52px;
+        padding: 0 14px;
+        border-bottom: 1px solid var(--line);
+        background: #0d1220;
       }
-
-      .eyebrow {
-        margin: 0 0 5px;
-        color: #7ea8f0;
-        font-size: 12px;
+      .topbar .brand {
+        display: flex;
+        align-items: baseline;
+        gap: 8px;
       }
-
-      h1 {
+      .topbar h1 {
         margin: 0;
-        font-size: 24px;
+        font-size: 16px;
         font-weight: 700;
-        letter-spacing: 1px;
+        letter-spacing: 2px;
       }
-
+      .topbar .session {
+        color: var(--accent-dim);
+        font-size: 11px;
+      }
       .refresh {
-        width: 60px;
-        height: 32px;
-        border: 1px solid #4f8ff7;
-        border-radius: 5px;
+        height: 28px;
+        padding: 0 12px;
+        border: 1px solid var(--accent);
+        border-radius: 4px;
         background: transparent;
-        color: #4f8ff7;
-        font-size: 12px;
+        color: var(--accent);
+        font-size: 11px;
         font-weight: 700;
+        cursor: pointer;
       }
 
-      main {
-        display: grid;
-        gap: 12px;
-        padding: 12px;
+      /* ── Ticker 条 ─────────────────── */
+      .ticker {
+        display: flex;
+        gap: 0;
+        overflow-x: auto;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+        scrollbar-width: none;
       }
+      .ticker::-webkit-scrollbar { display: none; }
+      .tick {
+        flex: 0 0 auto;
+        padding: 8px 14px;
+        border-right: 1px solid var(--line-soft);
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .tick.active { background: var(--panel-2); box-shadow: 0 -2px 0 var(--accent) inset; }
+      .tick .t-code { color: var(--text-2); font-size: 11px; font-weight: 700; letter-spacing: 1px; }
+      .tick .t-price { margin-left: 6px; color: var(--text); font-size: 12px; font-weight: 600; }
+      .tick .t-chg { margin-left: 6px; font-size: 11px; }
+      .up { color: var(--up); }
+      .down { color: var(--down); }
+      .flat { color: var(--muted); }
+
+      main { display: grid; gap: 10px; padding: 10px; }
 
       .panel {
-        border: 1px solid #1f2637;
+        border: 1px solid var(--line);
         border-radius: 6px;
-        background: #131826;
+        background: var(--panel);
       }
 
-      .report {
+      /* ── Hero ─────────────────────── */
+      .hero { padding: 16px 16px 14px; }
+      .hero-head {
         display: flex;
-        align-items: center;
+        align-items: baseline;
         justify-content: space-between;
-        gap: 14px;
-        padding: 14px 16px;
       }
-
-      .report h2 {
-        margin: 0;
+      .hero-id { display: flex; align-items: baseline; gap: 10px; }
+      .hero-code { font-size: 22px; font-weight: 800; letter-spacing: 1.5px; }
+      .hero-name { color: var(--muted); font-size: 12px; }
+      .hero-contract {
+        padding: 2px 8px;
+        border: 1px solid var(--line);
+        border-radius: 3px;
+        color: var(--accent-dim);
+        font-size: 11px;
+      }
+      .hero-price-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 12px;
+        margin-top: 10px;
+      }
+      .hero-price {
+        font-size: 44px;
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: 0.5px;
+      }
+      .hero-chg {
+        margin-bottom: 5px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .hero-chg.up { background: rgba(240, 69, 92, 0.14); }
+      .hero-chg.down { background: rgba(13, 191, 126, 0.12); }
+      .stat-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1px;
+        margin-top: 16px;
+        border: 1px solid var(--line-soft);
+        border-radius: 5px;
         overflow: hidden;
-        color: #e6eaf2;
-        font-size: 16px;
-        font-weight: 600;
+        background: var(--line-soft);
+      }
+      .stat {
+        padding: 9px 10px;
+        background: var(--panel-2);
+      }
+      .stat .s-label { display: block; color: var(--muted); font-size: 10px; }
+      .stat .s-value { display: block; margin-top: 4px; color: var(--text); font-size: 14px; font-weight: 700; }
+      .stat .s-sub { display: block; margin-top: 2px; font-size: 10px; }
+
+      /* ── 基差分位条 ─────────────────── */
+      .pctile { margin-top: 14px; }
+      .pctile-head {
+        display: flex;
+        justify-content: space-between;
+        color: var(--muted);
+        font-size: 10px;
+      }
+      .pctile-head .p-zone { font-weight: 700; }
+      .pctile-track {
+        position: relative;
+        height: 6px;
+        margin-top: 6px;
+        border-radius: 3px;
+        background: linear-gradient(90deg, #14362b 0%, #1a2130 35%, #1a2130 65%, #3a2030 100%);
+      }
+      .pctile-marker {
+        position: absolute;
+        top: -3px;
+        width: 2px;
+        height: 12px;
+        border-radius: 1px;
+        background: var(--accent);
+        box-shadow: 0 0 6px rgba(79, 143, 247, 0.8);
+      }
+      .pctile-note { margin-top: 6px; color: var(--muted); font-size: 10px; }
+
+      /* ── 图表 ─────────────────────── */
+      .chart-panel { padding: 12px 10px 8px; }
+      .chart-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        padding: 0 6px 8px;
+      }
+      .chart-title { color: var(--text-2); font-size: 12px; font-weight: 700; }
+      .legend { display: flex; gap: 12px; color: var(--muted); font-size: 10px; }
+      .legend i {
+        display: inline-block;
+        width: 8px;
+        height: 2px;
+        margin-right: 4px;
+        vertical-align: middle;
+      }
+      uni-canvas { display: block; width: 100%; height: 220px; }
+
+      /* ── 品种表 ────────────────────── */
+      .board { overflow: hidden; }
+      .board-row {
+        display: grid;
+        grid-template-columns: 1.05fr 1fr 0.85fr 1.05fr;
+        align-items: center;
+        padding: 10px 12px;
+        border-top: 1px solid var(--line-soft);
+        cursor: pointer;
+      }
+      .board-row.head {
+        padding: 8px 12px;
+        border-top: 0;
+        color: var(--muted);
+        font-size: 10px;
+        letter-spacing: 1px;
+      }
+      .board-row:not(.head):hover { background: var(--panel-2); }
+      .board-row.active { background: var(--panel-2); box-shadow: 2px 0 0 var(--accent) inset; }
+      .board-row > span {
+        min-width: 0;
+        overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
       }
+      .b-code { font-size: 13px; font-weight: 700; letter-spacing: 0.5px; }
+      .b-name { display: block; color: var(--muted); font-size: 9px; font-weight: 400; letter-spacing: 0; }
+      .b-price, .b-chg, .b-basis { font-size: 12px; font-weight: 600; text-align: right; }
+      .b-basis .b-zone { display: block; font-size: 9px; font-weight: 400; color: var(--muted); }
 
-      .report p {
-        margin: 5px 0 0;
-        color: #5d6779;
-        font-size: 12px;
-      }
-
-      .link {
-        flex: 0 0 auto;
-        color: #4f8ff7;
-        font-size: 12px;
-        font-weight: 700;
-      }
-
-      .product-list {
-        display: grid;
-        gap: 10px;
-      }
-
-      .product {
-        padding: 14px 16px;
-      }
-
-      .product.active {
-        border-color: #4f8ff7;
-        box-shadow: 0 0 0 1px #4f8ff7 inset;
-      }
-
-      .product-head,
-      .price-row {
+      /* ── 四维分析 ───────────────────── */
+      .analysis { padding: 14px; }
+      .section-title { margin: 0 0 10px; font-size: 13px; font-weight: 700; }
+      .tabs {
         display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 12px;
+        gap: 2px;
+        border-bottom: 1px solid var(--line);
       }
-
-      .code {
-        display: inline-block;
-        margin: 0;
-        color: #e6eaf2;
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: 1px;
-      }
-
-      .name {
-        margin: 2px 0 0;
-        color: #5d6779;
+      .tab {
+        padding: 7px 12px;
+        border: 0;
+        border-bottom: 2px solid transparent;
+        background: transparent;
+        color: var(--muted);
         font-size: 12px;
+        cursor: pointer;
       }
-
-      .main-contract {
-        color: #7ea8f0;
-        font-weight: 400;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .price-row {
-        margin-top: 14px;
-      }
-
-      .label {
-        display: block;
-        color: #5d6779;
-        font-size: 11px;
-      }
-
-      .value {
-        display: block;
-        margin-top: 4px;
-        color: #e6eaf2;
-        font-size: 20px;
-        font-weight: 700;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .change {
-        display: block;
-        margin-top: 2px;
-        color: #7d879c;
+      .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 700; }
+      .tab-body {
+        min-height: 110px;
+        padding: 12px 2px 4px;
+        color: var(--text-2);
         font-size: 12px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .positive {
-        color: #f0455c;
-      }
-
-      .negative {
-        color: #0dbf7e;
-      }
-
-      .basis-row {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 8px;
-        margin-top: 12px;
-      }
-
-      .basis-row span {
-        padding: 4px 9px;
-        border: 1px solid #232b3d;
-        border-radius: 4px;
-        background: #1a2130;
-        color: #a7b0c2;
-        font-size: 11px;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .chart-panel,
-      .summary,
-      .analysis {
-        padding: 14px 16px;
-      }
-
-      .section-title {
-        margin: 0 0 10px;
-        color: #e6eaf2;
-        font-size: 15px;
-        font-weight: 600;
-      }
-
-      uni-canvas {
-        width: 100%;
-        height: 210px;
-      }
-
-      .summary-text {
-        margin: 0;
-        color: #c3cad9;
-        font-size: 13px;
-        line-height: 1.7;
+        line-height: 1.75;
         white-space: pre-wrap;
       }
-
-      .analysis-grid {
-        display: grid;
-        gap: 10px;
+      .conclusion {
+        margin-top: 10px;
+        padding: 10px 12px;
+        border-left: 3px solid var(--accent);
+        border-radius: 0 4px 4px 0;
+        background: var(--panel-2);
+        color: var(--text);
+        font-size: 12px;
+        font-weight: 600;
+        line-height: 1.6;
       }
 
-      .analysis-item {
-        padding: 12px;
-        border: 1px solid #1f2637;
-        border-radius: 5px;
-        background: #161d2c;
+      /* ── 摘要/页脚 ───────────────────── */
+      .summary { padding: 14px; }
+      .summary-text {
+        margin: 0;
+        color: var(--text-2);
+        font-size: 12px;
+        line-height: 1.8;
+        white-space: pre-wrap;
       }
-
-      .analysis-item h3 {
-        margin: 0 0 7px;
-        color: #4f8ff7;
-        font-size: 13px;
+      .report-entry {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 14px;
       }
-
-      .conclusion-text {
-        color: #f0455c;
-        font-weight: 700;
+      .report-entry .r-title {
+        overflow: hidden;
+        color: var(--text-2);
+        font-size: 12px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
       }
-
+      .report-entry .r-link { flex: 0 0 auto; color: var(--accent); font-size: 11px; font-weight: 700; }
       .disclaimer {
         margin: 0;
-        padding: 4px 0 14px;
-        color: #5d6779;
-        font-size: 11px;
+        padding: 2px 0 14px;
+        color: var(--muted);
+        font-size: 10px;
         text-align: center;
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-8vXKfqzi.js"></script>
+    <script type="module" crossorigin src="/assets/index-CrcWpJBc.js"></script>
   </head>
   <body>
     <div class="app">
-      <header class="top">
-        <div>
-          <p class="eyebrow" id="sessionText">日报</p>
+      <header class="topbar">
+        <div class="brand">
           <h1>期现分析</h1>
+          <span class="session" id="sessionText">日报</span>
         </div>
         <button class="refresh" id="refreshBtn">刷新</button>
       </header>
+
+      <nav class="ticker" id="ticker"></nav>
+
       <main>
-        <section class="report panel" id="reportCard"></section>
-        <section class="product-list" id="productList"></section>
-        <section class="chart-panel panel">
-          <h2 class="section-title" id="chartTitle">PTA 期现价格</h2>
-          <canvas id="trendChart" width="760" height="420"></canvas>
+        <!-- Hero：选中品种 -->
+        <section class="panel hero">
+          <div class="hero-head">
+            <div class="hero-id">
+              <span class="hero-code" id="heroCode">PTA</span>
+              <span class="hero-name" id="heroName">PTA</span>
+            </div>
+            <span class="hero-contract" id="heroContract">主力 TA0</span>
+          </div>
+          <div class="hero-price-row">
+            <span class="hero-price num" id="heroPrice">-</span>
+            <span class="hero-chg num flat" id="heroChg">-</span>
+          </div>
+          <div class="stat-grid">
+            <div class="stat">
+              <span class="s-label">现货</span>
+              <span class="s-value num" id="statSpot">-</span>
+              <span class="s-sub num" id="statSpotChg">-</span>
+            </div>
+            <div class="stat">
+              <span class="s-label">基差</span>
+              <span class="s-value num" id="statBasis">-</span>
+              <span class="s-sub" id="statBasisLabel">-</span>
+            </div>
+            <div class="stat">
+              <span class="s-label">持仓量</span>
+              <span class="s-value num" id="statOi">-</span>
+              <span class="s-sub num" id="statOiChg">-</span>
+            </div>
+            <div class="stat">
+              <span class="s-label">成交量</span>
+              <span class="s-value num" id="statVol">-</span>
+              <span class="s-sub">手</span>
+            </div>
+          </div>
+          <div class="pctile" id="pctileBox" style="display:none">
+            <div class="pctile-head">
+              <span>基差分位（近一年）</span>
+              <span class="p-zone" id="pctileZone">-</span>
+            </div>
+            <div class="pctile-track"><div class="pctile-marker" id="pctileMarker"></div></div>
+            <div class="pctile-note" id="pctileNote"></div>
+          </div>
         </section>
-        <section class="analysis panel">
-          <h2 class="section-title">四维分析</h2>
-          <div class="analysis-grid" id="analysisGrid"></div>
+
+        <!-- 图表 -->
+        <section class="panel chart-panel">
+          <div class="chart-head">
+            <span class="chart-title" id="chartTitle">PTA 期现价格 · 近30交易日</span>
+            <span class="legend">
+              <span><i style="background:#4f8ff7"></i>期货</span>
+              <span><i style="background:#f97316"></i>现货</span>
+            </span>
+          </div>
+          <canvas id="trendChart"></canvas>
         </section>
-        <section class="summary panel">
+
+        <!-- 品种表 -->
+        <section class="panel board" id="board"></section>
+
+        <!-- 四维分析 -->
+        <section class="panel analysis">
+          <h2 class="section-title">四维分析 · <span id="analysisCode">PTA</span></h2>
+          <div class="tabs" id="tabs"></div>
+          <div class="tab-body" id="tabBody">加载中…</div>
+          <div class="conclusion" id="conclusion" style="display:none"></div>
+        </section>
+
+        <!-- 日报入口 + 摘要 -->
+        <section class="panel report-entry">
+          <span class="r-title" id="reportTitle">暂无日报</span>
+          <span class="r-link">已发布</span>
+        </section>
+        <section class="panel summary">
           <h2 class="section-title">行情摘要</h2>
-          <p class="summary-text" id="summaryText"></p>
+          <p class="summary-text" id="summaryText">-</p>
         </section>
-        <p class="disclaimer">结构描述，非买卖指令</p>
+
+        <p class="disclaimer">结构描述，非买卖指令 · 数据来源：交易所行情/公开现货基准</p>
       </main>
     </div>
 
