@@ -86,6 +86,22 @@
         </view>
         <text class="pctile-note">平值隐含波动率 {{ volSnap.atm_iv }}%（标的 {{ volSnap.underlying_month }}），高于近一年 {{ volSnap.iv_percentile }}% 的交易日；20 日历史波动率 {{ volSnap.hv20 === null ? '-' : volSnap.hv20 + '%' }}{{ volSpreadText }}（样本 {{ volSnap.sample_days }} 天）</text>
       </view>
+      <view class="profile" v-if="profile && profile.bins && profile.bins.length">
+        <view class="pctile-head">
+          <text>成交分布（近5日）</text>
+          <text class="p-zone">POC {{ fmtInt(profile.poc) }} · 现价{{ profile.position }}</text>
+        </view>
+        <view class="profile-row" v-for="b in profileTopBins" :key="b.price">
+          <text class="profile-price num">{{ fmtInt(b.low) }}-{{ fmtInt(b.high) }}</text>
+          <view class="profile-track">
+            <view class="profile-bar" :class="{ poc: b.is_poc }" :style="{ width: (b.volume / profile.max_bin_volume * 100) + '%' }">
+              <view class="profile-big" :style="{ width: (b.volume ? b.big_volume / b.volume * 100 : 0) + '%' }" />
+            </view>
+          </view>
+          <text class="profile-pct num">{{ b.pct }}%</text>
+        </view>
+        <text class="pctile-note">密集成交区 {{ fmtInt(profile.val) }}-{{ fmtInt(profile.vah) }}（70% 价值区），橙色=放量分钟成交（占比 {{ profile.big_volume_pct }}%）</text>
+      </view>
     </view>
 
     <!-- 品种表 -->
@@ -140,7 +156,8 @@ import {
   getOverview,
   getRealtime,
   getTrend,
-  getVolatility
+  getVolatility,
+  getVolumeProfile
 } from '../../utils/api'
 
 const overview = reactive({ latest_report: null, products: [] })
@@ -148,6 +165,15 @@ const state = reactive({ code: 'PTA', live: {}, liveOn: false, trendLast: null }
 const quoteNote = ref('已收盘 · 显示最近交易日收盘数据')
 const snapshot = ref(null)
 const volSnap = ref(null)
+const profile = ref(null)
+const profileTopBins = computed(() => {
+  const bins = profile.value?.bins
+  if (!Array.isArray(bins)) return []
+  return [...bins].sort((a, b) => b.volume - a.volume).slice(0, 6).sort((a, b) => b.price - a.price)
+})
+function fmtInt(v) {
+  return Number.isFinite(Number(v)) ? String(Math.round(Number(v))) : '-'
+}
 const volSpreadText = computed(() => {
   const s = volSnap.value?.iv_hv_spread
   return s === null || s === undefined ? '' : `，IV-HV 利差 ${s > 0 ? '+' : ''}${s}`
@@ -270,15 +296,18 @@ async function selectProduct(code) {
   state.code = code
   snapshot.value = null
   volSnap.value = null
+  profile.value = null
   state.trendLast = null
   try {
-    const [detail, trend, vol] = await Promise.all([getBasisDetail(code), getTrend(code, 5), getVolatility(code)])
+    const [detail, trend, vol, prof] = await Promise.all([getBasisDetail(code), getTrend(code, 5), getVolatility(code), getVolumeProfile(code)])
     snapshot.value = detail?.snapshot || null
     volSnap.value = vol || null
+    profile.value = prof || null
     state.trendLast = Array.isArray(trend) && trend.length ? trend[trend.length - 1] : null
   } catch (error) {
     snapshot.value = null
     volSnap.value = null
+    profile.value = null
   }
 }
 
@@ -657,6 +686,57 @@ onUnload(() => {
   margin-top: 10rpx;
   color: #5d6779;
   font-size: 19rpx;
+}
+
+/* 成交分布 */
+.profile {
+  margin-top: 24rpx;
+}
+
+.profile-row {
+  display: flex;
+  align-items: center;
+  margin-top: 8rpx;
+}
+
+.profile-price {
+  width: 170rpx;
+  color: #5d6779;
+  font-size: 18rpx;
+}
+
+.profile-track {
+  flex: 1;
+  height: 18rpx;
+  margin: 0 12rpx;
+  border-radius: 4rpx;
+  background: #1a2130;
+  overflow: hidden;
+}
+
+.profile-bar {
+  height: 100%;
+  border-radius: 4rpx;
+  background: rgba(79, 143, 247, 0.35);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.profile-bar.poc {
+  background: rgba(79, 143, 247, 0.75);
+}
+
+.profile-big {
+  height: 100%;
+  border-radius: 4rpx;
+  background: rgba(232, 179, 74, 0.7);
+}
+
+.profile-pct {
+  width: 70rpx;
+  text-align: right;
+  color: #a7b0c2;
+  font-size: 18rpx;
 }
 
 /* 品种表 */

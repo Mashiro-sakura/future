@@ -113,3 +113,13 @@ export async function getVolatility(code) {
     return null
   }
 }
+
+export async function getVolumeProfile(code) {
+  // 成交分布：无数据（404）或失败返回 null（面板自动隐藏，不用 mock）
+  try {
+    return await request(`/api/public/volume-profile/${code}`)
+  } catch (error) {
+    console.warn('Volume profile unavailable', error)
+    return null
+  }
+}

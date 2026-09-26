@@ -21,10 +21,12 @@ from app.schemas import (
     ReportOut,
     TrendPoint,
     VolatilityOut,
+    VolumeProfileOut,
 )
 from app.services.analytics import overview_products, trend_points
 from app.services.basis import BASIS_LOOKBACK_DAYS, basis_overview, basis_series, basis_snapshot
 from app.services.volatility import volatility_snapshot
+from app.services.volume_profile import volume_profile_snapshot
 from app.services.reports import ensure_report_analysis, latest_public_report
 from app.services.wechat_miniapp import WechatMiniappApiError, exchange_code_for_openid, is_wechat_miniapp_subscription_configured
 
@@ -185,6 +187,14 @@ def volatility_detail(code: str, db: Session = Depends(get_db)) -> dict[str, obj
     if snapshot is None:
         raise HTTPException(status_code=404, detail="该品种暂无期权波动率数据")
     return snapshot
+
+
+@router.get("/volume-profile/{code}", response_model=VolumeProfileOut)
+def volume_profile_detail(code: str, db: Session = Depends(get_db)) -> dict[str, object]:
+    payload = volume_profile_snapshot(db, code)
+    if payload is None:
+        raise HTTPException(status_code=404, detail="该品种暂无成交分布数据")
+    return payload
 
 
 @router.get("/reports/latest", response_model=ReportOut)

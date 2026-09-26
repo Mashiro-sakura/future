@@ -274,3 +274,34 @@ class VolatilityOut(BaseModel):
     sample_days: int = 0
     window: int = 0
     source: str | None = None
+
+
+class VolumeProfileBin(BaseModel):
+    low: float
+    high: float
+    price: float
+    volume: float
+    big_volume: float
+    pct: float
+    is_poc: bool = False
+
+
+class VolumeProfileOut(BaseModel):
+    """成交量分布（近5日分钟线窗口，结构描述）。"""
+
+    code: str
+    futures_symbol: str | None = None
+    window_start: str | None = None
+    window_end: str | None = None
+    bar_count: int = 0
+    bin_size: float | None = None
+    poc: float | None = None
+    vah: float | None = None
+    val: float | None = None
+    last_close: float | None = None
+    position: str | None = None
+    total_volume: float | None = None
+    big_volume_pct: float | None = None
+    max_bin_volume: float | None = None
+    bins: list[VolumeProfileBin] = []
+    server_time: str | None = None

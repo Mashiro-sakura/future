@@ -156,6 +156,12 @@
         color: var(--muted);
         font-size: 10px;
       }
+      .profile-note {
+        margin-top: 6px;
+        color: var(--muted);
+        font-size: 10px;
+        line-height: 1.5;
+      }
       .hero-price-row {
         display: flex;
         align-items: flex-end;
@@ -419,6 +425,7 @@
             </span>
           </div>
           <canvas id="trendChart"></canvas>
+          <div class="profile-note" id="profileNote" style="display:none"></div>
         </section>
 
         <!-- 品种表 -->
@@ -469,7 +476,7 @@
         }))
       }
 
-      const state = { code: 'PTA', tab: 'price_behavior', overview: null, trend: [], live: {}, liveOn: false }
+      const state = { code: 'PTA', tab: 'price_behavior', overview: null, trend: [], live: {}, liveOn: false, profile: null }
 
       const $ = (sel) => document.querySelector(sel)
       const money = (v) => (v === null || v === undefined ? '-' : Number(v).toLocaleString())
@@ -807,6 +814,48 @@
           ctx.setLineDash([])
         }
 
+        /* ── 成交量分布叠加（近5日分钟线，右锚横条）── */
+        const prof = state.profile
+        if (prof && Array.isArray(prof.bins) && prof.bins.length) {
+          const barMaxW = area.w * 0.22
+          const maxVol = prof.max_bin_volume || 1
+          for (const b of prof.bins) {
+            const y = yAt(b.price)
+            if (y < area.y || y > area.y + area.h) continue
+            const bh = Math.max(((prof.bin_size || 1) / (max - min)) * area.h * 0.9, 2)
+            const bw = (b.volume / maxVol) * barMaxW
+            ctx.fillStyle = b.is_poc ? 'rgba(79,143,247,0.42)' : 'rgba(79,143,247,0.16)'
+            ctx.fillRect(area.x + area.w - bw, y - bh / 2, bw, bh)
+            if (b.big_volume > 0) {
+              const bw2 = (b.big_volume / maxVol) * barMaxW
+              ctx.fillStyle = 'rgba(232,179,74,0.5)'
+              ctx.fillRect(area.x + area.w - bw2, y - bh / 2, bw2, bh)
+            }
+          }
+          // POC / VAH / VAL 参考线
+          const refLines = [
+            [prof.poc, '#4f8ff7', 'POC'],
+            [prof.vah, '#5d6779', 'VAH'],
+            [prof.val, '#5d6779', 'VAL']
+          ]
+          ctx.font = '9px sans-serif'
+          for (const [price, color, label] of refLines) {
+            if (!Number.isFinite(Number(price))) continue
+            const y = yAt(price)
+            if (y < area.y || y > area.y + area.h) continue
+            ctx.setLineDash([4, 4])
+            ctx.beginPath()
+            ctx.moveTo(area.x, y)
+            ctx.lineTo(area.x + area.w, y)
+            ctx.strokeStyle = color + (label === 'POC' ? 'aa' : '66')
+            ctx.lineWidth = 1
+            ctx.stroke()
+            ctx.setLineDash([])
+            ctx.fillStyle = color
+            ctx.fillText(label, area.x + 2, y - 3)
+          }
+        }
+
         // 日期标签
         ctx.fillStyle = '#5d6779'
         ctx.font = '10px sans-serif'
@@ -825,6 +874,7 @@
         renderHero(products.find((p) => p.code === code))
         renderPctile(code)
         renderVol(code)
+        renderProfile(code)
         renderAnalysis()
       }
 
@@ -833,6 +883,29 @@
         const trend = await getJson(`/api/public/products/${state.code}/trend?days=60`, [])
         state.trend = trend
         drawTrend(trend.slice(-30))
+      }
+
+      /* ── 成交量分布（订单流免费近似，近5日分钟线）── */
+      async function renderProfile(code) {
+        const note = $('#profileNote')
+        const prof = await getJson(`/api/public/volume-profile/${code}`, null)
+        state.profile = prof
+        if (!prof || !Array.isArray(prof.bins) || !prof.bins.length) {
+          note.style.display = 'none'
+          if (state.trend.length) drawTrend(state.trend.slice(-30))
+          return
+        }
+        note.style.display = 'block'
+        const span = `${fmtPrice(prof.val)}-${fmtPrice(prof.vah)}`
+        const winTxt = `${String(prof.window_start || '').slice(5, 10)}→${String(prof.window_end || '').slice(5, 10)}`
+        note.textContent =
+          `近5日密集成交区 ${span} · POC ${fmtPrice(prof.poc)} · 现价${prof.position || '-'}` +
+          ` · 放量成交占比 ${prof.big_volume_pct}%（${winTxt}，橙色=放量分钟）`
+        if (state.trend.length) drawTrend(state.trend.slice(-30))
+      }
+
+      function fmtPrice(v) {
+        return Number.isFinite(Number(v)) ? String(Math.round(Number(v))) : '-'
       }
 
       async function load() {

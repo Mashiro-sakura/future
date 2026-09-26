@@ -220,3 +220,72 @@ def test_volatility_endpoint(client: TestClient) -> None:
     assert data["sample_days"] == 30
 
     assert client.get("/api/public/volatility/PVC").status_code == 404  # 无期权配置
+
+
+# ── 成交量分布（Volume Profile，订单流免费近似）─────────────
+from app.services.volume_profile import build_volume_profile
+
+
+def _bar(i: int, price: float, vol: float) -> dict:
+    return {
+        "datetime": f"2026-09-24 10:{i:02d}:00",
+        "open": price, "high": price + 5, "low": price - 5,
+        "close": price, "volume": vol, "hold": 1000,
+    }
+
+
+def test_build_volume_profile_basic() -> None:
+    # 价格 6300 附近放 40 根大量 bar（密集区），6400 附近 10 根小量
+    rows = [_bar(i, 6300, 100) for i in range(40)] + [_bar(40 + i, 6400, 10) for i in range(10)]
+    prof = build_volume_profile(rows, bin_count=10)
+    assert prof is not None
+    assert prof["bar_count"] == 50
+    assert 6290 < prof["poc"] < 6310  # POC 落在 6300 密集区
+    assert prof["val"] <= prof["poc"] <= prof["vah"]
+    # 价值区覆盖率 >= 70%
+    covered = sum(b["volume"] for b in prof["bins"] if prof["val"] <= b["low"] and b["high"] <= prof["vah"])
+    assert covered / prof["total_volume"] >= 0.70
+    assert prof["last_close"] == 6400
+    assert prof["position"] in ("高于价值区", "价值区内", "低于价值区")
+    poc_bins = [b for b in prof["bins"] if b["is_poc"]]
+    assert len(poc_bins) == 1
+
+
+def test_build_volume_profile_big_volume_split() -> None:
+    # 均值 55，阈值 110：vol=200 的 bar 全部计入 big_volume
+    rows = [_bar(i, 6300, 10) for i in range(40)] + [_bar(40 + i, 6300, 200) for i in range(10)]
+    prof = build_volume_profile(rows, bin_count=10, big_mult=2.0)
+    assert prof is not None
+    big_total = sum(b["big_volume"] for b in prof["bins"])
+    assert big_total == 2000  # 10 × 200
+    assert prof["big_volume_pct"] == round(2000 / 2400 * 100, 1)
+
+
+def test_build_volume_profile_insufficient_data() -> None:
+    assert build_volume_profile([], bin_count=10) is None
+    assert build_volume_profile([_bar(0, 6300, 100)] * 5, bin_count=10) is None
+    # 零成交量 bar 被过滤
+    assert build_volume_profile([_bar(i, 6300, 0) for i in range(50)], bin_count=10) is None
+
+
+def test_volume_profile_endpoint(client: TestClient, monkeypatch) -> None:
+    import app.services.volume_profile as vp
+
+    rows = [_bar(i, 6300 + (i % 5) * 10, 100) for i in range(60)]
+    monkeypatch.setattr(vp, "_fetch_minute_bars", lambda symbol: rows)
+    vp._profile_cache.clear()
+
+    response = client.get("/api/public/volume-profile/PTA")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["code"] == "PTA"
+    assert data["poc"] is not None and data["bins"]
+    assert data["position"] in ("高于价值区", "价值区内", "低于价值区")
+
+    # 上游爆炸 → 回退缓存（仍是 200）
+    def _boom(symbol):
+        raise RuntimeError("upstream down")
+    monkeypatch.setattr(vp, "_fetch_minute_bars", _boom)
+    vp._profile_cache.clear()
+    vp._profile_cache["PTA"] = (999999999999, data)  # 远未来时间戳=缓存有效
+    assert client.get("/api/public/volume-profile/PTA").status_code == 200
