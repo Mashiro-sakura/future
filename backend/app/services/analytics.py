@@ -252,13 +252,22 @@ def _confidence_from_scores(action: str, scores: dict[str, DimensionScore]) -> i
     return _clip(confidence, 58, 90)
 
 
+def _structure_label(total: int) -> str:
+    # 评分语义：正分=低价/贴水等利买方信号累积，负分=高价/升水风险累积
+    if total >= 3:
+        return "偏低"
+    if total <= -3:
+        return "偏高"
+    return "中性"
+
+
 def build_analysis_conclusion(metrics: ProductMetrics, analysis: dict[str, str] | None = None) -> str:
+    # 观察层语言铁律：结论只描述结构，不输出采购/买卖动作（动作归采购台 Recommendation）
     scores = _dimension_scores(metrics, analysis)
-    action = _action_from_scores(metrics, scores)
     total = sum(item.score for item in scores.values())
     return (
         f"结论：四维综合评分{total}，价格行为{scores['price'].score}分、基本面{scores['fundamental'].score}分、"
-        f"宏观面{scores['macro'].score}分、政策面{scores['policy'].score}分；综合判断建议{action}。"
+        f"宏观面{scores['macro'].score}分、政策面{scores['policy'].score}分；期现结构{_structure_label(total)}。"
     )
 
 

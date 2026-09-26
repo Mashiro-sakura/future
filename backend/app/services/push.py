@@ -43,10 +43,7 @@ def build_wechat_markdown(report: Report, db: Session | None = None) -> str:
         if basis_lines:
             lines.extend(["### 基差结构快照", *basis_lines, ""])
 
-    lines.append("### 采购建议")
-    for item in report.recommendations:
-        lines.append(f"- **{item.product_code}**：{item.action}（置信度{item.confidence}%）")
-        lines.append(f"  {item.basis}")
+    # 采购建议（动作层）已从观察层推送移除——动作归采购台，推送只给结构（2026-09-24 拍板）
     if report.product_analyses:
         lines.extend(["", "### 政策/产业消息"])
         for item in report.product_analyses:

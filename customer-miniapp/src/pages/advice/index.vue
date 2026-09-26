@@ -147,7 +147,7 @@ onShow(loadAdvice)
 
 .advice-card.active {
   border: 2rpx solid #4f8ff7;
-  background: #eff6ff;
+  background: #1c2b4a;
 }
 
 .basis-title,
@@ -228,7 +228,7 @@ onShow(loadAdvice)
 
 .analysis-title {
   display: block;
-  color: #1d4ed8;
+  color: #4f8ff7;
   font-size: 26rpx;
   font-weight: 800;
 }

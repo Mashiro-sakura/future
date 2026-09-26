@@ -151,8 +151,8 @@ onShow(loadReports)
 .analysis-grid text {
   padding: 8rpx 6rpx;
   border-radius: 8rpx;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #1c2b4a;
+  color: #4f8ff7;
   font-size: 21rpx;
   text-align: center;
 }

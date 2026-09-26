@@ -76,5 +76,8 @@ def test_wechat_markdown_includes_basis_snapshot(client: TestClient, auth_header
 
     assert "### 基差结构快照" in markdown
     assert "基差" in markdown
-    # 采购建议段仍在基差段之后（结构先行，行动在后）
-    assert markdown.index("### 基差结构快照") < markdown.index("### 采购建议")
+    # 观察层语言铁律（2026-09-24 拍板）：动作层"采购建议"不进推送，推送只给结构；
+    # 基差段必须在行情摘要之前（结构先行）
+    assert "### 采购建议" not in markdown
+    assert "置信度" not in markdown
+    assert markdown.index("### 基差结构快照") < markdown.index("### 行情摘要")

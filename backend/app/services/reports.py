@@ -292,6 +292,17 @@ def _build_analysis_sections(db: Session, products: list[Product]) -> dict[str, 
     }
 
 
+def _basis_tone(value: float | None) -> str:
+    # 与 services/basis.py 同一口径：>10 升水 / <-10 贴水 / 其余平水（正值=现货升水）
+    if value is None:
+        return "无基差"
+    if value > 10:
+        return "现货升水"
+    if value < -10:
+        return "现货贴水"
+    return "平水"
+
+
 def generate_report(db: Session, session_name: str = "evening", force: bool = False) -> Report:
     today = date.today()
     existing = db.query(Report).filter(Report.report_date == today, Report.session_name == session_name).first()
@@ -310,12 +321,12 @@ def generate_report(db: Session, session_name: str = "evening", force: bool = Fa
             analysis_map[product.code]["conclusion"] = build_analysis_conclusion(metrics, analysis_map[product.code])
         if metrics.futures_close is None:
             summary_lines.append(
-                f"{product.code}：现货{metrics.spot_price or '-'}，暂不做期货盘面分析，建议{action}。"
+                f"{product.code}：现货{metrics.spot_price or '-'}，纯现货跟踪，无期货基差。"
             )
         else:
             summary_lines.append(
                 f"{product.code}：主力合约{metrics.futures_contract or '-'}，期货{metrics.futures_close or '-'}，现货{metrics.spot_price or '-'}，"
-                f"基差{metrics.basis_value if metrics.basis_value is not None else '-'}，建议{action}。"
+                f"基差{metrics.basis_value if metrics.basis_value is not None else '-'}（{_basis_tone(metrics.basis_value)}）。"
             )
         recommendations.append(
             Recommendation(

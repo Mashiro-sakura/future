@@ -120,7 +120,7 @@ onLoad(async (query) => {
 .name {
   display: block;
   margin-top: 8rpx;
-  color: #cbd5e1;
+  color: #a7b0c2;
   font-size: 24rpx;
 }
 
@@ -194,7 +194,7 @@ onLoad(async (query) => {
 
 .analysis-title {
   display: block;
-  color: #1d4ed8;
+  color: #4f8ff7;
   font-size: 26rpx;
   font-weight: 800;
 }

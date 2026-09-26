@@ -169,7 +169,7 @@ onLoad(async (query) => {
 
 .analysis-title {
   display: block;
-  color: #1d4ed8;
+  color: #4f8ff7;
   font-size: 26rpx;
   font-weight: 800;
 }
@@ -183,7 +183,7 @@ onLoad(async (query) => {
   padding-right: 12rpx;
   padding-left: 12rpx;
   border-radius: 8rpx;
-  background: #eff6ff;
+  background: #1c2b4a;
 }
 
 .advice-row:first-of-type {
@@ -205,8 +205,8 @@ onLoad(async (query) => {
 .action {
   padding: 8rpx 12rpx;
   border-radius: 8rpx;
-  background: #eff6ff;
-  color: #1d4ed8;
+  background: #1c2b4a;
+  color: #4f8ff7;
   font-size: 24rpx;
 }
 
