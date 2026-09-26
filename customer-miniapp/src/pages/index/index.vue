@@ -76,6 +76,16 @@
         </view>
         <text class="pctile-note">当前基差 {{ signed(snapshot.basis_value) }}（{{ snapshot.basis_label }}），高于近一年 {{ snapshot.percentile }}% 的交易日（样本 {{ snapshot.sample_days }} 天{{ snapshot.data_stale ? '，数据停更' : '' }}）</text>
       </view>
+      <view class="pctile" v-if="volSnap && volSnap.iv_percentile !== null && volSnap.iv_percentile !== undefined">
+        <view class="pctile-head">
+          <text>波动率分位（近一年）</text>
+          <text class="p-zone">{{ volSnap.zone }} · {{ volSnap.iv_percentile }}%</text>
+        </view>
+        <view class="pctile-track">
+          <view class="pctile-marker" :style="{ left: `calc(${Math.min(Math.max(volSnap.iv_percentile, 0), 100)}% - 2rpx)` }" />
+        </view>
+        <text class="pctile-note">平值隐含波动率 {{ volSnap.atm_iv }}%（标的 {{ volSnap.underlying_month }}），高于近一年 {{ volSnap.iv_percentile }}% 的交易日；20 日历史波动率 {{ volSnap.hv20 === null ? '-' : volSnap.hv20 + '%' }}{{ volSpreadText }}（样本 {{ volSnap.sample_days }} 天）</text>
+      </view>
     </view>
 
     <!-- 品种表 -->
@@ -129,13 +139,19 @@ import {
   getMiniappSubscribeConfig,
   getOverview,
   getRealtime,
-  getTrend
+  getTrend,
+  getVolatility
 } from '../../utils/api'
 
 const overview = reactive({ latest_report: null, products: [] })
 const state = reactive({ code: 'PTA', live: {}, liveOn: false, trendLast: null })
 const quoteNote = ref('已收盘 · 显示最近交易日收盘数据')
 const snapshot = ref(null)
+const volSnap = ref(null)
+const volSpreadText = computed(() => {
+  const s = volSnap.value?.iv_hv_spread
+  return s === null || s === undefined ? '' : `，IV-HV 利差 ${s > 0 ? '+' : ''}${s}`
+})
 const priceFlash = ref(false)
 const subscribeLoading = ref(false)
 const subscribeConfig = ref(null)
@@ -253,13 +269,16 @@ function startRealtimeLoop() {
 async function selectProduct(code) {
   state.code = code
   snapshot.value = null
+  volSnap.value = null
   state.trendLast = null
   try {
-    const [detail, trend] = await Promise.all([getBasisDetail(code), getTrend(code, 5)])
+    const [detail, trend, vol] = await Promise.all([getBasisDetail(code), getTrend(code, 5), getVolatility(code)])
     snapshot.value = detail?.snapshot || null
+    volSnap.value = vol || null
     state.trendLast = Array.isArray(trend) && trend.length ? trend[trend.length - 1] : null
   } catch (error) {
     snapshot.value = null
+    volSnap.value = null
   }
 }
 

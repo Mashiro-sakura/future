@@ -20,9 +20,11 @@ from app.schemas import (
     RealtimeQuoteOut,
     ReportOut,
     TrendPoint,
+    VolatilityOut,
 )
 from app.services.analytics import overview_products, trend_points
 from app.services.basis import BASIS_LOOKBACK_DAYS, basis_overview, basis_series, basis_snapshot
+from app.services.volatility import volatility_snapshot
 from app.services.reports import ensure_report_analysis, latest_public_report
 from app.services.wechat_miniapp import WechatMiniappApiError, exchange_code_for_openid, is_wechat_miniapp_subscription_configured
 
@@ -175,6 +177,14 @@ def basis_detail(code: str, days: int = 120, db: Session = Depends(get_db)) -> d
     history = basis_series(db, product.code, days=safe_days)
     snapshot["name"] = product.name
     return {"snapshot": snapshot, "history": history}
+
+
+@router.get("/volatility/{code}", response_model=VolatilityOut)
+def volatility_detail(code: str, db: Session = Depends(get_db)) -> dict[str, object]:
+    snapshot = volatility_snapshot(db, code)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="该品种暂无期权波动率数据")
+    return snapshot
 
 
 @router.get("/reports/latest", response_model=ReportOut)

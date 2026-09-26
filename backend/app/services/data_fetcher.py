@@ -871,6 +871,12 @@ def sync_market_data(db: Session, job_type: str = "manual", days: int = 60) -> t
             messages.append(f"{product.code}: {log.message}")
         finally:
             log.ended_at = datetime.utcnow()
+    try:
+        from app.services.volatility import sync_volatility_daily
+
+        messages.append(sync_volatility_daily(db, days=5))
+    except Exception as exc:
+        messages.append(f"波动率: 同步失败：{exc}")
     db.commit()
     return synced, "；".join(messages)
 

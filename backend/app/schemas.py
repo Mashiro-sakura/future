@@ -254,3 +254,23 @@ class RealtimeQuoteOut(BaseModel):
     trade_date: date | None = None
     trading_now: bool
     server_time: datetime
+
+
+class VolatilityOut(BaseModel):
+    """期权波动率快照（结构描述，日频）。iv_percentile 为近一年分位。"""
+
+    code: str
+    trade_date: date | None = None
+    underlying_month: str | None = None
+    futures_ref: float | None = None
+    atm_strike: float | None = None
+    atm_iv: float | None = None
+    call_iv: float | None = None
+    put_iv: float | None = None
+    hv20: float | None = None
+    iv_hv_spread: float | None = None
+    iv_percentile: float | None = None
+    zone: str | None = None
+    sample_days: int = 0
+    window: int = 0
+    source: str | None = None

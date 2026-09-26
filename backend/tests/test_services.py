@@ -143,3 +143,80 @@ def test_wechat_markdown_includes_basis_snapshot(client: TestClient, auth_header
     assert "### 采购建议" not in markdown
     assert "置信度" not in markdown
     assert markdown.index("### 基差结构快照") < markdown.index("### 行情摘要")
+
+
+# ── 波动率传感器（V1: PTA/郑商所）─────────────────────────
+from datetime import timedelta
+
+from app.services.volatility import compute_hv, extract_atm_iv, parse_option_contract
+
+
+def test_parse_option_contract() -> None:
+    assert parse_option_contract("TA611C4750") == ("TA611", "C", 4750.0)
+    assert parse_option_contract("TA701P6300") == ("TA701", "P", 6300.0)
+    assert parse_option_contract("") is None
+    assert parse_option_contract("TA0") is None
+
+
+def _opt_row(code: str, iv: float, oi: float) -> dict:
+    return {"合约代码": code, "隐含波动率": iv, "持仓量": oi}
+
+
+def test_extract_atm_iv_picks_main_month_and_nearest_strike() -> None:
+    rows = [
+        # TA611 持仓量大 = 主力月
+        _opt_row("TA611C6300", 30.0, 100), _opt_row("TA611P6300", 32.0, 90),
+        _opt_row("TA611C6400", 28.0, 80), _opt_row("TA611P6400", 29.0, 70),
+        # TA612 持仓量小，不应被选中（IV 故意离谱做探针）
+        _opt_row("TA612C6300", 99.0, 1), _opt_row("TA612P6300", 99.0, 1),
+    ]
+    atm = extract_atm_iv(rows, futures_ref=6340.0)
+    assert atm is not None
+    assert atm["underlying_month"] == "TA611"
+    assert atm["atm_strike"] == 6300.0  # 距 6340 最近
+    assert atm["atm_iv"] == 31.0  # (30+32)/2
+
+
+def test_extract_atm_iv_empty() -> None:
+    assert extract_atm_iv([], futures_ref=6300.0) is None
+    assert extract_atm_iv([_opt_row("乱码", 30.0, 100)], futures_ref=6300.0) is None
+
+
+def test_compute_hv() -> None:
+    assert compute_hv([100, 101]) is None  # 数据不足
+    flat = compute_hv([100.0] * 30)
+    assert flat == 0.0  # 零波动
+    import math, random
+    random.seed(7)
+    prices = [6000.0]
+    for _ in range(40):
+        prices.append(prices[-1] * math.exp(random.gauss(0, 0.01)))
+    hv = compute_hv(prices)
+    assert hv is not None and 5 < hv < 30  # 日波 1% ≈ 年化 15.9%
+
+
+def test_volatility_endpoint(client: TestClient) -> None:
+    import app.database as database
+    from app.models import VolatilityDaily
+
+    db = database.SessionLocal()
+    base = date(2026, 8, 3)
+    for i in range(30):
+        db.add(VolatilityDaily(
+            product_code="PTA", trade_date=base + timedelta(days=i),
+            underlying_month="TA611", futures_ref=6300.0, atm_strike=6300.0,
+            atm_iv=20.0 + i, call_iv=20.0 + i, put_iv=20.0 + i, hv20=18.0, source="test",
+        ))
+    db.commit()
+    db.close()
+
+    response = client.get("/api/public/volatility/PTA")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["atm_iv"] == 49.0  # 最新一日
+    assert data["iv_percentile"] == 100.0  # 递增序列，最新即最高
+    assert data["zone"] == "高位区"
+    assert data["iv_hv_spread"] == 31.0
+    assert data["sample_days"] == 30
+
+    assert client.get("/api/public/volatility/PVC").status_code == 404  # 无期权配置

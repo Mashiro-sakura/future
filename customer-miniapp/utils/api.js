@@ -103,3 +103,13 @@ export async function getRealtime() {
     return null
   }
 }
+
+export async function getVolatility(code) {
+  // 期权波动率快照：无期权数据（404）或失败返回 null（区块自动隐藏，不用 mock）
+  try {
+    return await request(`/api/public/volatility/${code}`)
+  } catch (error) {
+    console.warn('Volatility unavailable', error)
+    return null
+  }
+}

@@ -184,6 +184,30 @@ class Recommendation(Base):
     report: Mapped[Report] = relationship(back_populates="recommendations")
 
 
+class VolatilityDaily(Base):
+    """期权波动率日频快照（V1: PTA/郑商所，IV 直接取交易所发布值）。
+
+    定位=给期货终端加"波动率传感器"：IV 分位 + IV-HV 利差，全是结构描述。
+    """
+
+    __tablename__ = "volatility_daily"
+    __table_args__ = (UniqueConstraint("product_code", "trade_date", name="uq_volatility_product_date"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    product_code: Mapped[str] = mapped_column(String(16), ForeignKey("products.code"), index=True)
+    trade_date: Mapped[date] = mapped_column(Date, index=True)
+    underlying_month: Mapped[str] = mapped_column(String(16), default="")
+    futures_ref: Mapped[float | None] = mapped_column(Float)
+    atm_strike: Mapped[float | None] = mapped_column(Float)
+    atm_iv: Mapped[float] = mapped_column(Float)
+    call_iv: Mapped[float | None] = mapped_column(Float)
+    put_iv: Mapped[float | None] = mapped_column(Float)
+    hv20: Mapped[float | None] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(64), default="czce")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class AdminUser(Base):
     __tablename__ = "admin_users"
 

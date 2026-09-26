@@ -399,6 +399,14 @@
             <div class="pctile-track"><div class="pctile-marker" id="pctileMarker"></div></div>
             <div class="pctile-note" id="pctileNote"></div>
           </div>
+          <div class="pctile" id="volBox" style="display:none">
+            <div class="pctile-head">
+              <span>波动率分位（近一年）</span>
+              <span class="p-zone" id="volZone">-</span>
+            </div>
+            <div class="pctile-track"><div class="pctile-marker" id="volMarker"></div></div>
+            <div class="pctile-note" id="volNote"></div>
+          </div>
         </section>
 
         <!-- 图表 -->
@@ -656,6 +664,23 @@
           `（样本 ${snap.sample_days} 天${snap.data_stale ? '，数据停更' : ''}）`
       }
 
+      /* ── 波动率分位（期权传感器，V1 仅 PTA，无数据自动隐藏）── */
+      async function renderVol(code) {
+        const box = $('#volBox')
+        const snap = await getJson(`/api/public/volatility/${code}`, null)
+        if (!snap || snap.iv_percentile === null || snap.iv_percentile === undefined) {
+          box.style.display = 'none'
+          return
+        }
+        box.style.display = 'block'
+        $('#volZone').textContent = `${snap.zone || '-'} · ${snap.iv_percentile}%`
+        $('#volMarker').style.left = `calc(${Math.min(Math.max(snap.iv_percentile, 0), 100)}% - 1px)`
+        const spread = snap.iv_hv_spread == null ? '' : `，IV-HV 利差 ${snap.iv_hv_spread > 0 ? '+' : ''}${snap.iv_hv_spread}`
+        $('#volNote').textContent =
+          `平值隐含波动率 ${snap.atm_iv}%（标的 ${snap.underlying_month}），高于近一年 ${snap.iv_percentile}% 的交易日` +
+          `；20 日历史波动率 ${snap.hv20 == null ? '-' : snap.hv20 + '%'}${spread}（样本 ${snap.sample_days} 天）`
+      }
+
       /* ── 四维分析 ── */
       function renderAnalysis() {
         const report = state.overview?.latest_report || {}
@@ -799,6 +824,7 @@
         await loadTrend()
         renderHero(products.find((p) => p.code === code))
         renderPctile(code)
+        renderVol(code)
         renderAnalysis()
       }
 
