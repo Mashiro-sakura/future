@@ -383,3 +383,76 @@ def test_position_rank_endpoint(client: TestClient) -> None:
     assert data["code"] == "PTA"
     assert data["net_long"] is not None
     assert client.get("/api/public/position-rank/PVC").status_code == 404
+
+
+# ── 故障隔离：现货链路死亡不连坐期货（2026-09-26 老板铁律）──
+import app.services.data_fetcher as df
+from app.models import FuturesPrice, SyncLog
+
+
+def _stub_sync_env(monkeypatch, spot_behavior="boom"):
+    """把 sync 全链路换成可控替身：期货正常返 1 行，现货按 behavior 爆炸或返回空。"""
+    row = df.FuturesRow(
+        trade_date=date(2026, 9, 24), contract_code="TA0",
+        open_price=6300.0, high_price=6350.0, low_price=6280.0,
+        close_price=6340.0, settlement_price=6330.0,
+        volume=100.0, open_interest=1000.0, source="test",
+    )
+    monkeypatch.setattr(df, "fetch_futures_prices", lambda product, days: [row])
+    if spot_behavior == "boom":
+        def _boom(product, days):
+            raise RuntimeError("现货源爆炸")
+        monkeypatch.setattr(df, "fetch_spot_prices", _boom)
+    monkeypatch.setattr(df, "fetch_inventory_snapshots", lambda product, days: [])
+    monkeypatch.setattr(df, "fetch_operating_rate_snapshots", lambda product, days: [])
+    monkeypatch.setattr(df, "sync_daily_policy_events", lambda db, products: 0)
+    import app.services.volatility as vol_mod
+    import app.services.position_rank as rank_mod
+    monkeypatch.setattr(vol_mod, "sync_volatility_daily", lambda db, days=5: "波动率: stub")
+    monkeypatch.setattr(rank_mod, "sync_position_rank_daily", lambda db, days=5: "持仓排名: stub")
+
+
+def test_sync_spot_failure_does_not_block_futures(client: TestClient, monkeypatch) -> None:
+    _stub_sync_env(monkeypatch, spot_behavior="boom")
+    monkeypatch.setattr(df, "fetch_macro_snapshots", lambda days: [])
+    db = database.SessionLocal()
+    synced, message = df.sync_market_data(db, job_type="test", days=5)
+
+    # 期货行必须落库——现货爆炸不许连坐
+    futures_count = db.query(FuturesPrice).filter(FuturesPrice.source == "test").count()
+    assert futures_count > 0, "现货爆炸导致期货未落库=故障隔离失效"
+    assert synced > 0
+    assert "现货失败" in message
+    # SyncLog 必须如实标 partial（不是 success 也不是 failed）
+    log = db.query(SyncLog).filter(SyncLog.job_type == "test").first()
+    assert log is not None and log.status == "partial", log.message if log else "no log"
+    db.close()
+
+
+def test_sync_macro_failure_does_not_block_products(client: TestClient, monkeypatch) -> None:
+    _stub_sync_env(monkeypatch, spot_behavior="ok")
+    def _boom_macro(days):
+        raise RuntimeError("宏观源爆炸")
+    monkeypatch.setattr(df, "fetch_macro_snapshots", _boom_macro)
+    db = database.SessionLocal()
+    synced, message = df.sync_market_data(db, job_type="test-macro", days=5)
+    assert "宏观指标: 同步失败" in message
+    assert synced > 0  # 品种行情照常
+    assert db.query(FuturesPrice).filter(FuturesPrice.source == "test").count() > 0
+    db.close()
+
+
+def test_overview_tolerates_futures_only_product(client: TestClient) -> None:
+    """现货数据缺失的品种：overview 照常 200，spot/basis 字段为 None 由前端隐藏。"""
+    db = database.SessionLocal()
+    db.add(FuturesPrice(
+        product_code="PTA", trade_date=date(2026, 9, 24), contract_code="TA0",
+        close_price=6340.0, source="test-futures-only",
+    ))
+    db.commit()
+    response = client.get("/api/public/overview")
+    assert response.status_code == 200, response.text
+    pta = next(p for p in response.json()["products"] if p["code"] == "PTA")
+    assert pta["futures_close"] == 6340.0
+    assert pta["spot_price"] is None and pta["basis_value"] is None
+    db.close()

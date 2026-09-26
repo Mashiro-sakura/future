@@ -835,42 +835,58 @@ def _upsert_operating_rate(db: Session, product: Product, row: OperatingRateRow)
 
 
 def sync_market_data(db: Session, job_type: str = "manual", days: int = 60) -> tuple[int, str]:
+    """全量同步。故障隔离铁律（2026-09-26 老板拍板）：
+
+    每一类数据独立抓取+落库，任一环节爆炸只降级不连坐——
+    现货/库存/开工率/宏观/政策全灭，期货行情也必须照常更新。
+    历史教训：改造前现货 fetch 抛异常会跳过整段 try，已抓到的期货行全部不落库。
+    """
     products = db.query(Product).filter(Product.is_active.is_(True)).order_by(Product.display_order).all()
     synced = 0
     messages: list[str] = []
-    macro_rows = fetch_macro_snapshots(days)
-    for row in macro_rows:
-        _upsert_macro(db, row)
-    messages.append(f"宏观指标: 写入/更新{len(macro_rows)}条")
-    policy_event_count = sync_daily_policy_events(db, products)
-    messages.append(f"政策消息: 写入/更新{policy_event_count}条")
+    try:
+        macro_rows = fetch_macro_snapshots(days)
+        for row in macro_rows:
+            _upsert_macro(db, row)
+        messages.append(f"宏观指标: 写入/更新{len(macro_rows)}条")
+    except Exception as exc:
+        messages.append(f"宏观指标: 同步失败（不连坐行情）：{exc}")
+    try:
+        policy_event_count = sync_daily_policy_events(db, products)
+        messages.append(f"政策消息: 写入/更新{policy_event_count}条")
+    except Exception as exc:
+        messages.append(f"政策消息: 同步失败（不连坐行情）：{exc}")
+    # (标签, 抓取函数, 落库函数) —— 每类独立 try，现货链路死亡不影响期货落库
+    category_pipeline = [
+        ("期货", fetch_futures_prices, _upsert_futures),
+        ("现货", fetch_spot_prices, _upsert_spot),
+        ("库存", fetch_inventory_snapshots, _upsert_inventory),
+        ("开工率", fetch_operating_rate_snapshots, _upsert_operating_rate),
+    ]
     for product in products:
         log = SyncLog(job_type=job_type, product_code=product.code, status="running", message="同步开始")
         db.add(log)
         db.flush()
-        try:
-            futures_rows = fetch_futures_prices(product, days)
-            spot_rows = fetch_spot_prices(product, days)
-            inventory_rows = fetch_inventory_snapshots(product, days)
-            operating_rate_rows = fetch_operating_rate_snapshots(product, days)
-            for row in futures_rows:
-                _upsert_futures(db, product, row)
-            for row in spot_rows:
-                _upsert_spot(db, product, row)
-            for row in inventory_rows:
-                _upsert_inventory(db, product, row)
-            for row in operating_rate_rows:
-                _upsert_operating_rate(db, product, row)
+        parts: list[str] = []
+        failures: list[str] = []
+        for label, fetcher, upserter in category_pipeline:
+            try:
+                rows = fetcher(product, days)
+                for row in rows:
+                    upserter(db, product, row)
+                parts.append(f"{label}{len(rows)}条")
+            except Exception as exc:
+                failures.append(f"{label}失败:{exc}")
+        if failures:
+            log.status = "partial" if parts else "failed"
+            log.message = f"写入/更新{','.join(parts)}" + ("；" + "；".join(failures) if failures else "")
+        else:
             log.status = "success"
-            log.message = f"写入/更新期货{len(futures_rows)}条，现货{len(spot_rows)}条，库存{len(inventory_rows)}条，开工率{len(operating_rate_rows)}条"
+            log.message = f"写入/更新{','.join(parts)}"
+        if parts:
             synced += 1
-            messages.append(f"{product.code}: {log.message}")
-        except Exception as exc:
-            log.status = "failed"
-            log.message = f"同步失败：{exc}"
-            messages.append(f"{product.code}: {log.message}")
-        finally:
-            log.ended_at = datetime.utcnow()
+        messages.append(f"{product.code}: {log.message}")
+        log.ended_at = datetime.utcnow()
     try:
         from app.services.volatility import sync_volatility_daily
 
