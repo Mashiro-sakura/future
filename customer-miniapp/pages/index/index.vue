@@ -43,6 +43,7 @@
         <text class="hero-price num" :class="{ flash: priceFlash }">{{ money(displayOf(current).price) }}</text>
         <text class="hero-chg num" :class="tone(displayOf(current).chg)">{{ pct(displayOf(current).chg) }}</text>
       </view>
+      <text class="quote-note">{{ quoteNote }}</text>
       <view class="stat-grid">
         <view class="stat">
           <text class="s-label">现货</text>
@@ -133,6 +134,7 @@ import {
 
 const overview = reactive({ latest_report: null, products: [] })
 const state = reactive({ code: 'PTA', live: {}, liveOn: false, trendLast: null })
+const quoteNote = ref('已收盘 · 显示最近交易日收盘数据')
 const snapshot = ref(null)
 const priceFlash = ref(false)
 const subscribeLoading = ref(false)
@@ -219,6 +221,9 @@ async function pollRealtime() {
   if (!Array.isArray(quotes)) return
   const before = state.live[state.code]?.price
   state.live = Object.fromEntries(quotes.map((q) => [q.code, q]))
+  const now = new Date()
+  const hhmmss = [now.getHours(), now.getMinutes(), now.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':')
+  quoteNote.value = `盘中快照 · 延迟约10秒 · 更新于 ${hhmmss}`
   const after = state.live[state.code]?.price
   if (before !== after && after !== null && after !== undefined) {
     priceFlash.value = false
@@ -234,6 +239,7 @@ async function pollRealtime() {
 function startRealtimeLoop() {
   const on = isTradingNow()
   state.liveOn = on
+  quoteNote.value = on ? '盘中快照 · 延迟约10秒 · 等待首次更新' : '已收盘 · 显示最近交易日收盘数据'
   if (on && !liveTimer) {
     pollRealtime()
     liveTimer = setInterval(pollRealtime, 10000)
@@ -536,6 +542,13 @@ onUnload(() => {
 .hero-price.flash {
   color: #4f8ff7;
   transition: color 0.7s ease-out;
+}
+
+.quote-note {
+  display: block;
+  margin-top: 10rpx;
+  color: #5d6779;
+  font-size: 19rpx;
 }
 
 .hero-chg {

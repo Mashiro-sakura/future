@@ -151,6 +151,11 @@
         100% { color: var(--text); }
       }
       .hero-price.flash { animation: flash 0.7s ease-out; }
+      .quote-note {
+        margin-top: 8px;
+        color: var(--muted);
+        font-size: 10px;
+      }
       .hero-price-row {
         display: flex;
         align-items: flex-end;
@@ -363,6 +368,7 @@
             <span class="hero-price num" id="heroPrice">-</span>
             <span class="hero-chg num flat" id="heroChg">-</span>
           </div>
+          <div class="quote-note" id="quoteNote">已收盘 · 显示最近交易日收盘数据</div>
           <div class="stat-grid">
             <div class="stat">
               <span class="s-label">现货</span>
@@ -496,12 +502,15 @@
 
       function updateLiveTag() {
         const tag = $('#liveTag')
+        const note = $('#quoteNote')
         if (state.liveOn) {
           tag.textContent = 'LIVE'
           tag.className = 'live-tag on'
+          note.textContent = '盘中快照 · 延迟约10秒 · 等待首次更新'
         } else {
           tag.textContent = '已收盘'
           tag.className = 'live-tag off'
+          note.textContent = '已收盘 · 显示最近交易日收盘数据'
         }
       }
 
@@ -510,6 +519,9 @@
         if (!Array.isArray(quotes)) return
         const prev = { ...state.live }
         state.live = Object.fromEntries(quotes.map((q) => [q.code, q]))
+        const now = new Date()
+        const hhmmss = [now.getHours(), now.getMinutes(), now.getSeconds()].map((n) => String(n).padStart(2, '0')).join(':')
+        $('#quoteNote').textContent = `盘中快照 · 延迟约10秒 · 更新于 ${hhmmss}`
         const products = state.overview?.products || []
         renderTicker(products)
         renderBoard(products)
