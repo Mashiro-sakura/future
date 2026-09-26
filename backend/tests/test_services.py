@@ -45,6 +45,68 @@ def test_parse_sina_realtime_quote_items() -> None:
     assert rows[0][1][8] == "16030.000"
 
 
+def test_realtime_endpoint_shape(client: TestClient) -> None:
+    """准实时端点：无网/上游失败也必须 200 出结构（stale 不白屏）。"""
+    response = client.get("/api/public/realtime")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list) and data
+    item = data[0]
+    assert set(item) >= {"code", "contract_code", "price", "prev_close", "change_pct", "trading_now", "server_time"}
+    assert isinstance(item["trading_now"], bool)
+
+
+def test_is_trading_time() -> None:
+    from datetime import datetime
+
+    from app.routers.public import _is_trading_time
+
+    assert _is_trading_time(datetime(2026, 9, 25, 9, 30)) is True  # 周五上午盘
+    assert _is_trading_time(datetime(2026, 9, 25, 10, 20)) is False  # 盘中休息
+    assert _is_trading_time(datetime(2026, 9, 25, 14, 0)) is True  # 下午盘
+    assert _is_trading_time(datetime(2026, 9, 25, 21, 30)) is True  # 夜盘
+    assert _is_trading_time(datetime(2026, 9, 25, 16, 0)) is False  # 收盘后
+    assert _is_trading_time(datetime(2026, 9, 26, 10, 0)) is False  # 周六
+
+
+def test_realtime_quotes_fall_back_to_cache(monkeypatch) -> None:
+    """上游故障时回退旧缓存（stale 总比白屏强）。"""
+    from app.services import data_fetcher
+
+    row = data_fetcher.FuturesRow(
+        trade_date=date(2026, 9, 25),
+        contract_code="TA2701",
+        open_price=None,
+        high_price=None,
+        low_price=None,
+        close_price=6300.0,
+        settlement_price=None,
+        volume=1.0,
+        open_interest=2.0,
+        source="sina-main-contract-realtime",
+    )
+
+    class _ProductStub:
+        code = "PTA"
+        futures_symbol = "TA0"
+        exchange = "CZCE"
+
+    data_fetcher._realtime_cache["ts"] = 0.0
+    data_fetcher._realtime_cache["data"] = None
+    monkeypatch.setattr(data_fetcher, "_fetch_realtime_rows_from_sina_symbols", lambda symbols: [("TA2701", row)])
+    first = data_fetcher.fetch_realtime_main_quotes([_ProductStub()], ttl=60)
+    assert first["PTA"].close_price == 6300.0
+
+    # 缓存过期 + 上游爆炸 → 必须回退到旧缓存
+    def _boom(symbols):
+        raise RuntimeError("upstream down")
+
+    data_fetcher._realtime_cache["ts"] = 0.0
+    monkeypatch.setattr(data_fetcher, "_fetch_realtime_rows_from_sina_symbols", _boom)
+    second = data_fetcher.fetch_realtime_main_quotes([_ProductStub()], ttl=60)
+    assert second["PTA"].close_price == 6300.0
+
+
 def test_push_without_webhook_is_logged(client: TestClient, auth_headers: dict[str, str]) -> None:
     client.post("/api/admin/data/sync?days=5", headers=auth_headers)
     report = client.post("/api/admin/reports/generate?session_name=evening", headers=auth_headers).json()

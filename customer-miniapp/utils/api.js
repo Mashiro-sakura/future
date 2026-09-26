@@ -93,3 +93,13 @@ export async function getBasisDetail(code, days = 30) {
     return mockBasisDetail
   }
 }
+
+export async function getRealtime() {
+  // 盘中准实时快照：失败返回 null（调用方静默跳过本次 tick，不用 mock 干扰判断）
+  try {
+    return await request('/api/public/realtime')
+  } catch (error) {
+    console.warn('Realtime unavailable', error)
+    return null
+  }
+}
