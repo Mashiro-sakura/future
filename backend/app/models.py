@@ -230,6 +230,31 @@ class PositionRankDaily(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
 
+class SeatPositionDaily(Base):
+    """分席位持仓（日频官方前20榜）——L2 席位白名单数据底座。
+
+    存全部上榜席位（不只白名单），快照层按白名单过滤。
+    party_name 为归一化名称（去（代客）/（自营）后缀，代客+自营合并）。
+    CZCE=品种汇总榜直取；SHFE=合约级榜跨合约聚合（近似品种级）。
+    DCE 通路断臂（BadZipFile），DCE 品种暂无配置。
+    """
+
+    __tablename__ = "seat_position_daily"
+    __table_args__ = (UniqueConstraint("product_code", "trade_date", "party_name", name="uq_seat_position_product_date_party"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    product_code: Mapped[str] = mapped_column(String(16), ForeignKey("products.code"), index=True)
+    trade_date: Mapped[date] = mapped_column(Date, index=True)
+    party_name: Mapped[str] = mapped_column(String(64), index=True)
+    long_oi: Mapped[float | None] = mapped_column(Float)
+    long_chg: Mapped[float | None] = mapped_column(Float)
+    short_oi: Mapped[float | None] = mapped_column(Float)
+    short_chg: Mapped[float | None] = mapped_column(Float)
+    source: Mapped[str] = mapped_column(String(64), default="exchange-rank-top20")
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
+
+
 class AdminUser(Base):
     __tablename__ = "admin_users"
 

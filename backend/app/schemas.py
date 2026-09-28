@@ -324,3 +324,31 @@ class PositionRankOut(BaseModel):
     sample_days: int = 0
     window: int = 0
     source: str | None = None
+
+
+class SeatRow(BaseModel):
+    """单个白名单席位快照。missing=True 表示跌出前20（缩仓/移仓信号）。"""
+
+    party: str
+    role: str  # follow=盈利实证席位 / counter=亏损实证席位（对手盘信号）
+    missing: bool = False
+    long_oi: float | None = None
+    long_chg: float | None = None
+    short_oi: float | None = None
+    short_chg: float | None = None
+    net: float | None = None
+    net_chg_1d: float | None = None
+    note: str | None = None
+
+
+class SeatRankOut(BaseModel):
+    """席位白名单持仓快照（L2，日频官方前20榜，结构描述）。"""
+
+    code: str
+    trade_date: date | None = None
+    prev_date: date | None = None
+    exchange: str | None = None
+    seats: list[SeatRow] = []
+    follow_count: int = 0
+    counter_count: int = 0
+    source: str | None = None

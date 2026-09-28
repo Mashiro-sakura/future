@@ -899,6 +899,12 @@ def sync_market_data(db: Session, job_type: str = "manual", days: int = 60) -> t
         messages.append(sync_position_rank_daily(db, days=5))
     except Exception as exc:
         messages.append(f"持仓排名: 同步失败：{exc}")
+    try:
+        from app.services.seat_rank import sync_seat_rank_daily
+
+        messages.append(sync_seat_rank_daily(db, days=5))
+    except Exception as exc:
+        messages.append(f"席位持仓: 同步失败：{exc}")
     db.commit()
     return synced, "；".join(messages)
 

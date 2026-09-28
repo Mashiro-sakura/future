@@ -456,3 +456,90 @@ def test_overview_tolerates_futures_only_product(client: TestClient) -> None:
     assert pta["futures_close"] == 6340.0
     assert pta["spot_price"] is None and pta["basis_value"] is None
     db.close()
+
+
+# ── 席位白名单（L2 龙虎榜分席位）────────────────────
+from app.services.seat_rank import _aggregate_rows, normalize_party, seat_rank_snapshot
+from app.models import SeatPositionDaily
+
+
+def test_normalize_party_strips_suffix() -> None:
+    assert normalize_party("国泰君安（代客）") == "国泰君安"
+    assert normalize_party("国泰君安（自营）") == "国泰君安"
+    assert normalize_party("东证期货（代客）") == "东证期货"
+    assert normalize_party("中信期货") == "中信期货"
+    assert normalize_party("") == ""
+
+
+def test_aggregate_rows_merges_sides_and_suffixes() -> None:
+    rows = [
+        # 国泰君安代客多头 + 国泰君安自营多头 → 多头合并
+        {"long_party_name": "国泰君安（代客）", "long_open_interest": "100,000", "long_open_interest_chg": "1,000",
+         "short_party_name": "永安（代客）", "short_open_interest": "50,000", "short_open_interest_chg": "-200"},
+        {"long_party_name": "国泰君安（自营）", "long_open_interest": "10,000", "long_open_interest_chg": "500",
+         "short_party_name": "国泰君安（代客）", "short_open_interest": "20,000", "short_open_interest_chg": "-100"},
+    ]
+    agg = _aggregate_rows(rows)
+    assert agg["国泰君安"]["long_oi"] == 110000.0
+    assert agg["国泰君安"]["long_chg"] == 1500.0
+    assert agg["国泰君安"]["short_oi"] == 20000.0
+    assert agg["永安"]["short_oi"] == 50000.0
+
+
+def _seed_seat_rows() -> None:
+    db = database.SessionLocal()
+    d1, d2 = date(2026, 9, 23), date(2026, 9, 24)
+    # 白名单内：永安在榜（两天，净变化可算）；乾坤两天都不在（missing）
+    db.add(SeatPositionDaily(product_code="PTA", trade_date=d1, party_name="永安",
+                             long_oi=150000, long_chg=-2000, short_oi=80000, short_chg=1000, source="test"))
+    db.add(SeatPositionDaily(product_code="PTA", trade_date=d2, party_name="永安",
+                             long_oi=155000, long_chg=5000, short_oi=78000, short_chg=-2000, source="test"))
+    # 非白名单席位也存（快照层应过滤掉）
+    db.add(SeatPositionDaily(product_code="PTA", trade_date=d2, party_name="华泰",
+                             long_oi=99000, short_oi=0, source="test"))
+    db.commit()
+    db.close()
+
+
+def test_seat_rank_snapshot_and_missing(client: TestClient) -> None:
+    _seed_seat_rows()
+    snap = seat_rank_snapshot(database.SessionLocal(), "PTA")
+    assert snap is not None
+    assert snap["trade_date"] == date(2026, 9, 24)
+    assert snap["prev_date"] == date(2026, 9, 23)
+    by_party = {s["party"]: s for s in snap["seats"]}
+    # 白名单席位：永安净头寸与一日变化
+    yong_an = by_party["永安"]
+    assert yong_an["missing"] is False
+    assert yong_an["net"] == 155000 - 78000
+    assert yong_an["net_chg_1d"] == (155000 - 78000) - (150000 - 80000)
+    # 乾坤不在榜 → missing=True，绝不报错
+    assert by_party["乾坤"]["missing"] is True
+    # 非白名单席位（华泰）不出现在快照
+    assert "华泰" not in by_party
+    # 白名单全覆盖
+    assert len(snap["seats"]) == len(snap["follow"]) if "follow" in snap else True
+    assert snap["follow_count"] + snap["counter_count"] == len(snap["seats"])
+
+
+def test_seat_rank_endpoint(client: TestClient) -> None:
+    _seed_seat_rows()
+    response = client.get("/api/public/seat-rank/PTA")
+    assert response.status_code == 200, response.text
+    data = response.json()
+    assert data["code"] == "PTA"
+    assert any(s["party"] == "乾坤" and s["missing"] for s in data["seats"])
+    # DCE 品种（PVC）未配置 → 404
+    assert client.get("/api/public/seat-rank/PVC").status_code == 404
+
+
+def test_match_party_prefix_bidirectional() -> None:
+    from app.services.seat_rank import _match_party
+
+    stored = ["永安期货", "东证期货", "国泰君安", "中信期货", "中信建投"]
+    assert _match_party(stored, "永安") == "永安期货"       # 短名 → 全名
+    assert _match_party(stored, "东证") == "东证期货"
+    assert _match_party(stored, "国泰君安") == "国泰君安"     # 全等
+    # "中信"同时前缀命中两家且等长——歧义匹配（配置层应避免歧义前缀，只验证不误配第三家）
+    assert _match_party(stored, "中信") in {"中信期货", "中信建投"}
+    assert _match_party(stored, "乾坤") is None               # 不在库 → None

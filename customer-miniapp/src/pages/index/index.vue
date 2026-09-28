@@ -112,6 +112,31 @@
         </view>
         <text class="pctile-note">多头 {{ lots(rankSnap.long_top20) }}万手（{{ signedLots(rankSnap.long_chg_top20) }}）· 空头 {{ lots(rankSnap.short_top20) }}万手（{{ signedLots(rankSnap.short_chg_top20) }}），净{{ rankSnap.net_long >= 0 ? '多' : '空' }}较上日 {{ signedLots(rankSnap.net_chg) }}万手（近{{ rankSnap.sample_days }}日样本，红=多绿=空）</text>
       </view>
+      <view class="pctile" v-if="seatSnap && seatSnap.seats && seatSnap.seats.length">
+        <view class="pctile-head">
+          <text>重点席位（龙虎榜白名单）</text>
+          <text class="p-zone">{{ seatSnap.follow_count }}跟 / {{ seatSnap.counter_count }}反</text>
+        </view>
+        <view class="seat-list">
+          <view
+            v-for="s in seatSnap.seats"
+            :key="s.party"
+            class="seat-row"
+            :class="{ missing: s.missing }"
+          >
+            <view class="seat-party">
+              <text class="seat-tag" :class="s.role">{{ s.role === 'follow' ? '跟' : '反' }}</text>
+              <text class="seat-name">{{ s.party }}</text>
+            </view>
+            <text v-if="s.missing" class="seat-pos">{{ s.note || '跌出前20' }}</text>
+            <text v-else class="seat-pos">
+              <text :class="s.net >= 0 ? 'up' : 'dn'">{{ s.net >= 0 ? '净多' : '净空' }} {{ lots(Math.abs(s.net)) }}万手</text>
+              <text v-if="s.net_chg_1d !== null && s.net_chg_1d !== undefined" :class="s.net_chg_1d >= 0 ? 'up' : 'dn'">（{{ s.net_chg_1d >= 0 ? '+' : '' }}{{ (s.net_chg_1d / 10000).toFixed(1) }}万）</text>
+            </text>
+          </view>
+        </view>
+        <text class="pctile-note">数据 {{ String(seatSnap.trade_date || '').slice(5) }} · 席位=期货公司全部客户合计（非自营）· {{ seatSnap.exchange === 'SHFE' ? '上期所合约级榜聚合' : '郑商所品种榜' }} · 白名单依据2026年1-8月席位盈亏实证</text>
+      </view>
     </view>
 
     <!-- 品种表 -->
@@ -168,7 +193,8 @@ import {
   getTrend,
   getVolatility,
   getVolumeProfile,
-  getPositionRank
+  getPositionRank,
+  getSeatRank
 } from '../../utils/api'
 
 const overview = reactive({ latest_report: null, products: [] })
@@ -178,6 +204,7 @@ const snapshot = ref(null)
 const volSnap = ref(null)
 const profile = ref(null)
 const rankSnap = ref(null)
+const seatSnap = ref(null)
 function lots(v) {
   return Number.isFinite(Number(v)) ? (Number(v) / 10000).toFixed(1) : '-'
 }
@@ -318,21 +345,24 @@ async function selectProduct(code) {
   volSnap.value = null
   profile.value = null
   rankSnap.value = null
+  seatSnap.value = null
   state.trendLast = null
   try {
-    const [detail, trend, vol, prof, rank] = await Promise.all([
-      getBasisDetail(code), getTrend(code, 5), getVolatility(code), getVolumeProfile(code), getPositionRank(code)
+    const [detail, trend, vol, prof, rank, seats] = await Promise.all([
+      getBasisDetail(code), getTrend(code, 5), getVolatility(code), getVolumeProfile(code), getPositionRank(code), getSeatRank(code)
     ])
     snapshot.value = detail?.snapshot || null
     volSnap.value = vol || null
     profile.value = prof || null
     rankSnap.value = rank || null
+    seatSnap.value = seats || null
     state.trendLast = Array.isArray(trend) && trend.length ? trend[trend.length - 1] : null
   } catch (error) {
     snapshot.value = null
     volSnap.value = null
     profile.value = null
     rankSnap.value = null
+    seatSnap.value = null
   }
 }
 
@@ -777,6 +807,65 @@ onUnload(() => {
   height: 100%;
   border-radius: 7rpx 0 0 7rpx;
   background: rgba(240, 69, 92, 0.75);
+}
+
+/* 席位白名单（L2 龙虎榜） */
+.seat-list {
+  margin-top: 10rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.seat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 10rpx 12rpx;
+  border-radius: 8rpx;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.seat-row.missing {
+  opacity: 0.45;
+}
+
+.seat-party {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  min-width: 0;
+}
+
+.seat-tag {
+  flex: none;
+  padding: 0 8rpx;
+  border-radius: 4rpx;
+  font-size: 18rpx;
+  line-height: 28rpx;
+}
+
+.seat-tag.follow {
+  background: rgba(232, 63, 79, 0.15);
+  color: #e88a94;
+}
+
+.seat-tag.counter {
+  background: rgba(63, 195, 128, 0.12);
+  color: #6fcf97;
+}
+
+.seat-name {
+  color: #dbe2ee;
+  white-space: nowrap;
+  font-size: 22rpx;
+}
+
+.seat-pos {
+  color: #8b95a7;
+  font-size: 20rpx;
+  white-space: nowrap;
 }
 
 /* 品种表 */

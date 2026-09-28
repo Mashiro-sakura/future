@@ -240,6 +240,35 @@
       }
       .pctile-note { margin-top: 6px; color: var(--muted); font-size: 10px; }
 
+      /* ── 席位白名单（L2 龙虎榜）── */
+      #seatList { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+      .seat-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 11px;
+      }
+      .seat-row.missing { opacity: 0.45; }
+      .seat-party { display: flex; align-items: center; gap: 6px; min-width: 0; }
+      .seat-tag {
+        flex: none;
+        padding: 0 4px;
+        border-radius: 2px;
+        font-size: 9px;
+        line-height: 14px;
+      }
+      .seat-tag.follow { background: rgba(232, 63, 79, 0.15); color: #e88a94; }
+      .seat-tag.counter { background: rgba(63, 195, 128, 0.12); color: #6fcf97; }
+      .seat-name { color: var(--text); white-space: nowrap; }
+      .seat-pos { color: var(--muted); font-size: 10px; white-space: nowrap; }
+      .seat-pos b { font-weight: 600; }
+      .seat-pos .up { color: #e85f6f; }
+      .seat-pos .dn { color: #52c77e; }
+
       /* ── 图表 ─────────────────────── */
       .chart-panel { padding: 12px 10px 8px; }
       .chart-head {
@@ -358,7 +387,7 @@
         text-align: center;
       }
     </style>
-    <script type="module" crossorigin src="/assets/index-DV_no7Bp.js"></script>
+    <script type="module" crossorigin src="/assets/index-UxgTIkNy.js"></script>
   </head>
   <body>
     <div class="app">
@@ -433,6 +462,14 @@
             </div>
             <div class="rank-track"><div class="rank-long" id="rankLongBar"></div></div>
             <div class="pctile-note" id="rankNote"></div>
+          </div>
+          <div class="pctile" id="seatBox" style="display:none">
+            <div class="pctile-head">
+              <span>重点席位（龙虎榜白名单）</span>
+              <span class="p-zone" id="seatZone">-</span>
+            </div>
+            <div id="seatList"></div>
+            <div class="pctile-note" id="seatNote"></div>
           </div>
         </section>
 

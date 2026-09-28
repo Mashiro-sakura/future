@@ -240,6 +240,35 @@
       }
       .pctile-note { margin-top: 6px; color: var(--muted); font-size: 10px; }
 
+      /* ── 席位白名单（L2 龙虎榜）── */
+      #seatList { margin-top: 6px; display: flex; flex-direction: column; gap: 4px; }
+      .seat-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.03);
+        font-size: 11px;
+      }
+      .seat-row.missing { opacity: 0.45; }
+      .seat-party { display: flex; align-items: center; gap: 6px; min-width: 0; }
+      .seat-tag {
+        flex: none;
+        padding: 0 4px;
+        border-radius: 2px;
+        font-size: 9px;
+        line-height: 14px;
+      }
+      .seat-tag.follow { background: rgba(232, 63, 79, 0.15); color: #e88a94; }
+      .seat-tag.counter { background: rgba(63, 195, 128, 0.12); color: #6fcf97; }
+      .seat-name { color: var(--text); white-space: nowrap; }
+      .seat-pos { color: var(--muted); font-size: 10px; white-space: nowrap; }
+      .seat-pos b { font-weight: 600; }
+      .seat-pos .up { color: #e85f6f; }
+      .seat-pos .dn { color: #52c77e; }
+
       /* ── 图表 ─────────────────────── */
       .chart-panel { padding: 12px 10px 8px; }
       .chart-head {
@@ -432,6 +461,14 @@
             </div>
             <div class="rank-track"><div class="rank-long" id="rankLongBar"></div></div>
             <div class="pctile-note" id="rankNote"></div>
+          </div>
+          <div class="pctile" id="seatBox" style="display:none">
+            <div class="pctile-head">
+              <span>重点席位（龙虎榜白名单）</span>
+              <span class="p-zone" id="seatZone">-</span>
+            </div>
+            <div id="seatList"></div>
+            <div class="pctile-note" id="seatNote"></div>
           </div>
         </section>
 
@@ -896,6 +933,7 @@
         renderVol(code)
         renderProfile(code)
         renderRank(code)
+        renderSeats(code)
         renderAnalysis()
       }
 
@@ -952,6 +990,37 @@
         $('#rankNote').textContent =
           `多头 ${lots(snap.long_top20)}万手（${signedLots(snap.long_chg_top20)}）· 空头 ${lots(snap.short_top20)}万手（${signedLots(snap.short_chg_top20)}）` +
           `，净${net >= 0 ? '多' : '空'}较上日 ${signedLots(snap.net_chg)}万手（近${snap.sample_days}日样本，红=多绿=空）`
+      }
+
+      /* ── 重点席位（L2 龙虎榜白名单，日频官方前20榜）── */
+      async function renderSeats(code) {
+        const box = $('#seatBox')
+        const snap = await getJson(`/api/public/seat-rank/${code}`, null)
+        if (!snap || !Array.isArray(snap.seats) || !snap.seats.length) {
+          box.style.display = 'none'
+          return
+        }
+        box.style.display = 'block'
+        const rows = snap.seats.map((s) => {
+          if (s.missing) {
+            return `<div class="seat-row missing">
+              <span class="seat-party"><span class="seat-tag ${s.role}">${s.role === 'follow' ? '跟' : '反'}</span><span class="seat-name">${s.party}</span></span>
+              <span class="seat-pos">${s.note || '跌出前20'}</span>
+            </div>`
+          }
+          const net = Number(s.net) || 0
+          const chg = Number.isFinite(Number(s.net_chg_1d)) ? Number(s.net_chg_1d) : null
+          const chgTxt = chg === null ? '' : ` <span class="${chg >= 0 ? 'up' : 'dn'}">(${chg >= 0 ? '+' : ''}${(chg / 10000).toFixed(1)}万)</span>`
+          return `<div class="seat-row">
+            <span class="seat-party"><span class="seat-tag ${s.role}">${s.role === 'follow' ? '跟' : '反'}</span><span class="seat-name">${s.party}</span></span>
+            <span class="seat-pos"><b class="${net >= 0 ? 'up' : 'dn'}">${net >= 0 ? '净多' : '净空'} ${lots(Math.abs(net))}万手</b>${chgTxt}</span>
+          </div>`
+        }).join('')
+        $('#seatList').innerHTML = rows
+        $('#seatZone').textContent = `${snap.follow_count}跟 / ${snap.counter_count}反`
+        $('#seatNote').textContent =
+          `数据 ${String(snap.trade_date || '').slice(5)} · 席位=期货公司全部客户合计（非自营）· ` +
+          `${snap.exchange === 'SHFE' ? '上期所合约级榜聚合' : '郑商所品种榜'} · 白名单依据2026年1-8月席位盈亏实证`
       }
 
       async function load() {

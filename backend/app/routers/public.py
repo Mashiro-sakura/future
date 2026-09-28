@@ -23,10 +23,12 @@ from app.schemas import (
     VolatilityOut,
     VolumeProfileOut,
     PositionRankOut,
+    SeatRankOut,
 )
 from app.services.analytics import overview_products, trend_points
 from app.services.basis import BASIS_LOOKBACK_DAYS, basis_overview, basis_series, basis_snapshot
 from app.services.position_rank import position_rank_snapshot
+from app.services.seat_rank import seat_rank_snapshot
 from app.services.volatility import volatility_snapshot
 from app.services.volume_profile import volume_profile_snapshot
 from app.services.reports import ensure_report_analysis, latest_public_report
@@ -204,6 +206,14 @@ def position_rank_detail(code: str, db: Session = Depends(get_db)) -> dict[str, 
     snapshot = position_rank_snapshot(db, code)
     if snapshot is None:
         raise HTTPException(status_code=404, detail="该品种暂无持仓排名数据")
+    return snapshot
+
+
+@router.get("/seat-rank/{code}", response_model=SeatRankOut)
+def seat_rank_detail(code: str, db: Session = Depends(get_db)) -> dict[str, object]:
+    snapshot = seat_rank_snapshot(db, code)
+    if snapshot is None:
+        raise HTTPException(status_code=404, detail="该品种暂无席位白名单配置或数据")
     return snapshot
 
 

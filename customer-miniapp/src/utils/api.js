@@ -142,3 +142,13 @@ export async function getPositionRank(code) {
     return null
   }
 }
+
+export async function getSeatRank(code) {
+  // 席位白名单快照：无配置（404，如 DCE 品种）或失败返回 null（面板自动隐藏）
+  try {
+    return await request(`/api/public/seat-rank/${code}`)
+  } catch (error) {
+    console.warn('Seat rank unavailable', error)
+    return null
+  }
+}
