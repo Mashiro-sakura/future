@@ -1,6 +1,15 @@
 import { mockBasisDetail, mockBasisOverview, mockOverview, mockReports, mockTrend } from './mock.js'
 
+// API 基地址按端区分（uni-app 条件编译）：
+// - H5（本地 dev 走 manifest 代理 / 生产与后端同域部署）：相对路径 ''
+// - 微信小程序：必须完整域名。2026-09-28 起用自定义域名，
+//   zeabur.app 免费子域国内不可达已弃用
+// #ifdef MP-WEIXIN
+export const API_BASE = 'https://api.jd6yar.cn'
+// #endif
+// #ifndef MP-WEIXIN
 export const API_BASE = ''
+// #endif
 
 function request(path, options = {}) {
   const { method = 'GET', data } = options
