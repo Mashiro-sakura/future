@@ -30,3 +30,7 @@ logs/
 .vscode/
 *.swp
 *.swo
+
+# Seed database for deployment (tracked on purpose)
+!backend/seed/future_analysis.db
+customer-miniapp/vite.config.js.timestamp-*
