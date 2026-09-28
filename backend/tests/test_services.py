@@ -543,3 +543,90 @@ def test_match_party_prefix_bidirectional() -> None:
     # "中信"同时前缀命中两家且等长——歧义匹配（配置层应避免歧义前缀，只验证不误配第三家）
     assert _match_party(stored, "中信") in {"中信期货", "中信建投"}
     assert _match_party(stored, "乾坤") is None               # 不在库 → None
+
+
+# ── 东财降级链（2026-09-28：新浪对阿里云香港 IP 403）────────────────
+import app.services.data_fetcher as df_mod
+
+
+def test_em_trade_date_adaptive() -> None:
+    from datetime import date as _date
+    assert df_mod._em_trade_date(1790588322000) == _date(2026, 9, 28)   # 毫秒
+    assert df_mod._em_trade_date(1790588322) == _date(2026, 9, 28)      # 秒
+    assert df_mod._em_trade_date(None) == _date.today()                  # 兜底
+
+
+def test_fetch_realtime_row_from_em_scaling(monkeypatch) -> None:
+    """f59=2 → f43=625600 应解析为 6256.0；OI/成交量/昨结各就位。"""
+    class FakeResp:
+        status_code = 200
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {"data": {
+                "f43": 625600, "f44": 630000, "f45": 621000, "f46": 628000,
+                "f47": 582133, "f58": "PTA2701", "f59": 2, "f60": 634000,
+                "f86": 1790588322000, "f108": 982823, "f169": -8400, "f170": -132,
+            }}
+    captured = {}
+    def fake_get(url, params=None, headers=None, timeout=None):
+        captured["params"] = params
+        return FakeResp()
+    monkeypatch.setattr(df_mod.requests, "get", fake_get)
+    row = df_mod._fetch_realtime_row_from_em("TA2701", "TA2701")
+    assert row is not None
+    assert captured["params"]["secid"] == "115.ta2701"
+    assert row.close_price == 6256.0
+    assert row.high_price == 6300.0
+    assert row.volume == 582133.0
+    assert row.open_interest == 982823.0
+    assert row.source == "eastmoney-realtime"
+    assert row.settlement_price is None  # 东财无当日结算，诚实留空
+
+
+def test_fetch_realtime_row_from_em_dead_quote(monkeypatch) -> None:
+    """f43='-'（死合约/未开盘无数据）→ None 不崩。"""
+    class FakeResp:
+        status_code = 200
+        def raise_for_status(self):
+            pass
+        def json(self):
+            return {"data": {"f43": "-", "f59": 0}}
+    monkeypatch.setattr(df_mod.requests, "get", lambda *a, **k: FakeResp())
+    assert df_mod._fetch_realtime_row_from_em("TA2709", "TA2709") is None
+
+
+def test_sina_health_probe_caches_403(monkeypatch) -> None:
+    """新浪 403 → 探测 False 且 5 分钟内不再重探（TTL 缓存）。"""
+    df_mod._sina_health.update({"ts": 0.0, "ok": True})
+    calls = {"n": 0}
+    class FakeResp:
+        status_code = 403
+        text = "Forbidden"
+    def fake_get(url, **kwargs):
+        calls["n"] += 1
+        return FakeResp()
+    monkeypatch.setattr(df_mod.requests, "get", fake_get)
+    assert df_mod._sina_available() is False
+    assert df_mod._sina_available() is False  # 第二次走缓存
+    assert calls["n"] == 1                     # 只探了一次
+    df_mod._sina_health.update({"ts": 0.0, "ok": True})  # 复位污染
+
+
+def test_realtime_falls_back_to_em_when_sina_blocked(client: TestClient, monkeypatch) -> None:
+    """新浪被 403：全链路走东财，主力按持仓量选出。"""
+    df_mod._sina_health.update({"ts": 0.0, "ok": False})  # 直接标记新浪不可用
+    quotes = {
+        "TA2701": df_mod.FuturesRow(
+            trade_date=date(2026, 9, 28), contract_code="TA2701",
+            open_price=6280.0, high_price=6300.0, low_price=6210.0,
+            close_price=6256.0, settlement_price=None,
+            volume=582133.0, open_interest=982823.0, source="eastmoney-realtime",
+        ),
+    }
+    monkeypatch.setattr(df_mod, "_fetch_realtime_rows_for_product", lambda product: list(quotes.items()))
+    from app.models import Product as _P
+    rows = df_mod._fetch_realtime_rows_for_product(_P(code="PTA"))
+    assert rows[0][0] == "TA2701"
+    assert rows[0][1].source == "eastmoney-realtime"
+    df_mod._sina_health.update({"ts": 0.0, "ok": True})

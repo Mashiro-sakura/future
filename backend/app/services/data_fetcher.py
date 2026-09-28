@@ -392,6 +392,150 @@ def _fetch_realtime_row_from_sina_symbol(symbol: str, contract_code: str) -> Fut
     return None
 
 
+# ── 新浪健康探测：海外机房 IP 被新浪 403（2026-09-28 阿里云香港实测）──
+# Sina 拒答时每品种要耗 ~4.5s 才拿到 403，10 品种 = 45s 白等。
+# 探测一次（3s 上限），失败则 5 分钟内直走东财，不再碰新浪。
+_sina_health: dict[str, object] = {"ts": 0.0, "ok": True}
+SINA_HEALTH_TTL_SECONDS = 300
+
+
+def _sina_available() -> bool:
+    import time
+
+    now = time.time()
+    if now - float(_sina_health["ts"]) < SINA_HEALTH_TTL_SECONDS:
+        return bool(_sina_health["ok"])
+    try:
+        resp = requests.get(
+            SINA_REALTIME_URL.format(symbols="nf_TA0"),
+            headers=SINA_HEADERS,
+            timeout=(1.5, 3),
+        )
+        ok = resp.status_code == 200 and "hq_str" in resp.text
+    except Exception:
+        ok = False
+    _sina_health["ts"] = now
+    _sina_health["ok"] = ok
+    return ok
+
+
+# ── 东财 push2 降级源（新浪 403 时的实时行情兜底）──
+EM_PUSH_URL = "https://push2.eastmoney.com/api/qt/stock/get"
+EM_FIELDS = "f43,f44,f45,f46,f47,f58,f59,f60,f86,f108,f169,f170"
+# 交易所市场号：113=上期所 114=大商所 115=郑商所 142=广期所
+EM_MARKET_BY_PREFIX: dict[str, int] = {
+    "CU": 113, "AL": 113, "ZN": 113, "PB": 113, "NI": 113, "SN": 113,
+    "AU": 113, "AG": 113, "RB": 113, "HC": 113, "WR": 113, "FU": 113,
+    "BU": 113, "RU": 113, "SS": 113, "SP": 113, "SC": 113, "NR": 113,
+    "LU": 113, "BC": 113, "AO": 113, "BR": 113, "EC": 113, "AD": 113, "OP": 113,
+    "V": 114, "L": 114, "PP": 114, "J": 114, "JM": 114, "I": 114,
+    "M": 114, "Y": 114, "P": 114, "A": 114, "B": 114, "C": 114, "CS": 114,
+    "JD": 114, "FB": 114, "BB": 114, "RR": 114, "LH": 114, "EG": 114,
+    "EB": 114, "PG": 114, "LGD": 114,
+    "TA": 115, "MA": 115, "SR": 115, "CF": 115, "FG": 115, "SA": 115,
+    "PX": 115, "PL": 115, "OI": 115, "RM": 115, "ZC": 115, "WH": 115,
+    "PM": 115, "RI": 115, "LR": 115, "JR": 115, "AP": 115, "CJ": 115,
+    "UR": 115, "PF": 115, "SH": 115, "PR": 115, "PK": 115, "CY": 115,
+    "SI": 142, "LC": 142, "PS": 142,
+}
+_EM_SESSION_HEADERS = {"User-Agent": "Mozilla/5.0"}
+
+
+def _em_trade_date(ts) -> date:
+    """f86 时间戳（秒或毫秒自适应）→ 交易日；拿不到就用今天。"""
+    try:
+        v = float(ts)
+        if v > 1e12:  # 毫秒
+            v /= 1000
+        if v > 1e9:
+            return datetime.fromtimestamp(v).date()
+    except (TypeError, ValueError):
+        pass
+    return date.today()
+
+
+def _fetch_realtime_row_from_em(symbol: str, contract_code: str) -> FuturesRow | None:
+    """东财单合约实时快照（新浪被 403 时的降级源）。
+
+    字段：f43 最新价（10^f59 缩放）/ f47 成交量 / f108 持仓量 / f60 昨结 / f86 时间戳。
+    持仓量用于主力合约判定（与新浪路径同构）。
+    """
+    prefix_match = re.match(r"^[A-Z]+", symbol)
+    if not prefix_match:
+        return None
+    market = EM_MARKET_BY_PREFIX.get(prefix_match.group(0))
+    if market is None:
+        return None
+    try:
+        resp = requests.get(
+            EM_PUSH_URL,
+            params={"secid": f"{market}.{symbol.lower()}", "fields": EM_FIELDS},
+            headers=_EM_SESSION_HEADERS,
+            timeout=(2, 5),
+        )
+        resp.raise_for_status()
+        data = (resp.json() or {}).get("data") or {}
+    except Exception:
+        return None
+    raw_price = data.get("f43")
+    if raw_price in (None, "", "-"):
+        return None
+    try:
+        digits = int(data.get("f59") or 0)
+    except (TypeError, ValueError):
+        digits = 0
+    scale = 10 ** digits
+
+    def _scaled(v):
+        try:
+            return round(float(v) / scale, digits) if v not in (None, "", "-") else None
+        except (TypeError, ValueError):
+            return None
+
+    volume = None
+    oi = None
+    try:
+        volume = float(data.get("f47")) if data.get("f47") not in (None, "", "-") else None
+    except (TypeError, ValueError):
+        pass
+    try:
+        oi = float(data.get("f108")) if data.get("f108") not in (None, "", "-") else None
+    except (TypeError, ValueError):
+        pass
+    return FuturesRow(
+        trade_date=_em_trade_date(data.get("f86")),
+        contract_code=contract_code,
+        open_price=_scaled(data.get("f46")),
+        high_price=_scaled(data.get("f44")),
+        low_price=_scaled(data.get("f45")),
+        close_price=_scaled(raw_price),
+        settlement_price=None,  # 东财不提供当日结算价；实时链路不用此字段
+        volume=volume,
+        open_interest=oi,
+        source="eastmoney-realtime",
+    )
+
+
+def _fetch_realtime_rows_for_product(product: Product) -> list[tuple[str, FuturesRow]]:
+    """实时候选合约抓取：新浪健康走新浪（一次批量），否则逐合约走东财。"""
+    candidates = _contract_candidate_codes(_contract_prefix(product))
+    if not candidates:
+        return []
+    if _sina_available():
+        try:
+            rows = _fetch_realtime_rows_from_sina_symbols(candidates)
+            if rows:
+                return rows
+        except Exception:
+            pass  # 探测窗口内新浪中途拒答 → 落到东财
+    rows: list[tuple[str, FuturesRow]] = []
+    for symbol in candidates:
+        row = _fetch_realtime_row_from_em(symbol, symbol)
+        if row is not None:
+            rows.append((symbol, row))
+    return rows
+
+
 def _fetch_daily_rows_from_main_sina(product: Product, days: int) -> list[FuturesRow]:
     """主力连续合约日线（futures_main_sina，symbol 形如 TA0）。
 
@@ -430,7 +574,7 @@ def fetch_realtime_main_quotes(products: list[Product], ttl: int = REALTIME_CACH
         if not _has_futures(product):
             continue
         try:
-            rows = _fetch_realtime_rows_from_sina_symbols(_contract_candidate_codes(_contract_prefix(product)))
+            rows = _fetch_realtime_rows_for_product(product)
             if not rows:
                 continue
             rows.sort(key=lambda item: ((item[1].open_interest or 0), (item[1].volume or 0)), reverse=True)
